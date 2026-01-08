@@ -1,0 +1,99 @@
+---
+// Página de Login
+import AuthLayout from '../layouts/AuthLayout.astro';
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:5000';
+---
+
+<AuthLayout title="Login - Atlas">
+  <div class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión en Atlas</h2>
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+        <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+        <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Iniciar Sesión</button>
+    </form>
+    <p id="errorMessage" class="mt-4 text-red-600 text-center hidden"></p>
+  </div>
+</div>
+
+<script define:vars={{ apiUrl }}>
+  const form = document.getElementById('loginForm');
+  const errorMessage = document.getElementById('errorMessage');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    try {
+      console.log('Attempting login with:', { email, apiUrl });
+      errorMessage.classList.add('hidden');
+      
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      if (response.ok) {
+        const data = JSON.parse(responseText);
+        console.log('Login exitoso, datos:', data);
+        
+        // Convertir a camelCase si es necesario
+        const userData = {
+          token: data.token || data.Token || '',
+          role: data.role || data.Role || '',
+          name: data.name || data.Name || '',
+          negocioId: data.negocioId || data.NegocioId || '',
+          sucursalId: data.sucursalId || data.SucursalId || '',
+        };
+        
+        console.log('Saving user data:', userData);
+        
+        // Guardar en sessionStorage para acceso desde scripts inline
+        sessionStorage.setItem('userStore', JSON.stringify(userData));
+        // También guardar en localStorage para persistencia
+        localStorage.setItem('userStore', JSON.stringify(userData));
+        
+        // Redirección inteligente según el rol
+        if (userData.role === 'SuperAdmin') {
+          console.log('Redirecting SuperAdmin to /admin/negocios');
+          window.location.href = '/admin/negocios';
+        } else if (userData.role === 'AdminNegocio') {
+          console.log('Redirecting AdminNegocio to negocios page');
+          window.location.href = '/admin/negocios';
+        } else if (userData.role === 'Empleado') {
+          console.log('Redirecting Empleado to negocios (will auto-redirect to sucursal)');
+          window.location.href = '/admin/negocios';
+        } else {
+          console.log('Redirecting to /admin by default');
+          window.location.href = '/admin';
+        }
+      } else {
+        console.error('Error del servidor:', response.status, responseText);
+        errorMessage.textContent = responseText || 'Error al iniciar sesión. Verifica las credenciales.';
+        errorMessage.classList.remove('hidden');
+      }
+    } catch (error) {
+      console.error('Error de conexión:', error);
+      errorMessage.textContent = 'Error de conexión. Asegúrate de que el servidor esté corriendo.';
+      errorMessage.classList.remove('hidden');
+    }
+  });
+</script>
+</AuthLayout>

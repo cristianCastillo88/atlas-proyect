@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Decoder</title>
+</head>
+<body>
+    <h1>Decodificar JWT</h1>
+    <textarea id="token" placeholder="Pega tu token JWT aquí" style="width: 100%; height: 100px;"></textarea>
+    <button onclick="decode()">Decodificar</button>
+    <pre id="result"></pre>
+    
+    <script>
+        function decode() {
+            const token = document.getElementById('token').value;
+            if (!token) return;
+            
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(atob(parts[1]));
+                document.getElementById('result').textContent = JSON.stringify(payload, null, 2);
+            } catch (e) {
+                document.getElementById('result').textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        // Auto cargar desde localStorage/sessionStorage
+        window.onload = () => {
+            const stored = localStorage.getItem('userStore') || sessionStorage.getItem('userStore');
+            if (stored) {
+                const data = JSON.parse(stored);
+                if (data.token) {
+                    document.getElementById('token').value = data.token;
+                    decode();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

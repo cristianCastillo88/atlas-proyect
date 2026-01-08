@@ -1,0 +1,960 @@
+---
+export const prerender = false;
+import AuthLayout from '../../../layouts/AuthLayout.astro';
+const { id } = Astro.params;
+---
+
+<AuthLayout title="Gestión de Sucursal - Atlas">
+<div class="p-6 space-y-6" data-sucursal-id={id}>
+  <header class="flex items-center justify-between">
+    <div>
+      <p class="text-sm text-gray-500">Panel de Sucursal</p>
+      <h1 id="sucursal-title" class="text-3xl font-bold">Sucursal</h1>
+      <p id="sucursal-sub" class="text-gray-600 mt-1"></p>
+    </div>
+    <a href="/admin" class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Volver a mis locales</a>
+  </header>
+
+  <nav class="flex gap-2 border-b">
+    <button data-tab="nuevo-pedido" class="tab-btn px-4 py-2 border-b-2 border-transparent hover:bg-gray-50">Nuevo Pedido</button>
+    <button data-tab="carta" class="tab-btn px-4 py-2 border-b-2 border-transparent hover:bg-gray-50">Gestión de Carta</button>
+    <button data-tab="personal" class="tab-btn px-4 py-2 border-b-2 border-transparent hover:bg-gray-50">Personal</button>
+    <button data-tab="pedidos" class="tab-btn px-4 py-2 border-b-2 border-transparent hover:bg-gray-50">Pedidos</button>
+    <button data-tab="configuracion" class="tab-btn px-4 py-2 border-b-2 border-transparent hover:bg-gray-50">Configuración</button>
+  </nav>
+
+  <!-- Nuevo Pedido -->
+  <section id="tab-nuevo-pedido" class="hidden space-y-4">
+    <h2 class="text-xl font-semibold">Crear Nuevo Pedido</h2>
+    
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Selección de Productos -->
+      <div class="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 class="font-semibold mb-3">Seleccionar Productos</h3>
+        <div id="productos-disponibles" class="space-y-2 max-h-96 overflow-y-auto">
+          <p class="text-gray-500 text-sm">Cargando productos...</p>
+        </div>
+      </div>
+
+      <!-- Carrito y Datos del Cliente -->
+      <div class="space-y-4">
+        <!-- Carrito -->
+        <div class="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 class="font-semibold mb-3">Carrito</h3>
+          <div id="carrito-items" class="space-y-2 mb-3">
+            <p class="text-gray-500 text-sm">El carrito está vacío</p>
+          </div>
+          <div class="border-t pt-2 flex justify-between font-semibold">
+            <span>Total:</span>
+            <span id="carrito-total">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Formulario del Cliente -->
+        <form id="form-pedido" class="bg-white p-4 rounded-lg shadow-sm border space-y-3">
+          <h3 class="font-semibold mb-3">Datos del Cliente</h3>
+          
+          <div>
+            <label class="text-sm font-medium">Nombre</label>
+            <input name="nombreCliente" required class="mt-1 w-full border rounded-md px-3 py-2" />
+          </div>
+          
+          <div>
+            <label class="text-sm font-medium">Teléfono</label>
+            <input name="telefonoCliente" required class="mt-1 w-full border rounded-md px-3 py-2" />
+          </div>
+          
+          <div>
+            <label class="text-sm font-medium">Dirección</label>
+            <input id="direccion-input" name="direccionCliente" class="mt-1 w-full border rounded-md px-3 py-2" disabled />
+          </div>
+          
+          <div>
+            <label class="text-sm font-medium">Tipo de Entrega</label>
+            <select name="tipoEntregaId" required class="mt-1 w-full border rounded-md px-3 py-2" id="tipo-entrega-select">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="text-sm font-medium">Método de Pago</label>
+            <select name="metodoPagoId" required class="mt-1 w-full border rounded-md px-3 py-2" id="metodo-pago-select">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="text-sm font-medium">Observaciones</label>
+            <textarea name="observaciones" class="mt-1 w-full border rounded-md px-3 py-2" rows="2"></textarea>
+          </div>
+          
+          <button type="submit" class="w-full px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 font-semibold">
+            Confirmar Pedido
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Carta -->
+  <section id="tab-carta" class="hidden space-y-4">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl font-semibold">Productos</h2>
+      <button id="btn-add-producto" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Nuevo Producto</button>
+    </div>
+    <div class="overflow-x-auto bg-white shadow-sm border border-gray-200 rounded-lg">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+          <tr>
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Descripción</th>
+            <th class="px-4 py-3">Precio</th>
+            <th class="px-4 py-3">Stock</th>
+            <th class="px-4 py-3">Categoría</th>
+            <th class="px-4 py-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="productos-body" class="divide-y divide-gray-200 text-sm"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Personal -->
+  <section id="tab-personal" class="hidden space-y-4">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl font-semibold">Empleados</h2>
+      <button id="btn-add-empleado" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Registrar Empleado</button>
+    </div>
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+          <tr>
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="empleados-body" class="divide-y divide-gray-200 text-sm"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Pedidos -->
+  <section id="tab-pedidos" class="hidden space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold">Pedidos</h2>
+      <div class="flex gap-2">
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="">Todos</button>
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="Pendiente">Pendientes</button>
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="En Preparacion">En Cocina</button>
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="Listo">Listos</button>
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="Entregado">Entregados</button>
+        <button class="filtro-estado px-3 py-1 rounded-md border" data-estado="Cancelado">Cancelados</button>
+      </div>
+    </div>
+
+    <div id="pedidos-list" class="grid md:grid-cols-5 gap-4">
+      <div>
+        <h3 class="font-semibold mb-2">Pendientes</h3>
+        <div id="col-pendientes" class="space-y-2"></div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">En Cocina</h3>
+        <div id="col-cocina" class="space-y-2"></div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Listos</h3>
+        <div id="col-listos" class="space-y-2"></div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2 text-green-600">Entregados</h3>
+        <div id="col-entregados" class="space-y-2"></div>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2 text-red-600">Cancelados</h3>
+        <div id="col-cancelados" class="space-y-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Configuración -->
+  <section id="tab-configuracion" class="hidden space-y-4">
+    <h2 class="text-xl font-semibold">Configuración de Sucursal</h2>
+    
+    <div class="bg-white p-6 rounded-lg shadow-sm border max-w-2xl">
+      <form id="form-configuracion" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Teléfono de Contacto
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            id="config-telefono"
+            name="telefono"
+            required
+            placeholder="Ej: +54 11 1234-5678"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p class="text-sm text-gray-500 mt-1">Este teléfono se mostrará en el menú público de la sucursal.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Horario de Atención
+          </label>
+          <textarea
+            id="config-horario"
+            name="horario"
+            rows="3"
+            placeholder="Ej: Lunes a Viernes: 9:00 - 22:00&#10;Sábados y Domingos: 10:00 - 23:00"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          ></textarea>
+          <p class="text-sm text-gray-500 mt-1">Indica los horarios de atención de esta sucursal.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Dirección
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="config-direccion"
+            name="direccion"
+            required
+            placeholder="Ej: Av. Corrientes 1234, CABA"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p class="text-sm text-gray-500 mt-1">Dirección física de la sucursal.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+          <button
+            type="submit"
+            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Modal Empleado -->
+  <div id="modal-empleado" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+      <button id="close-modal-empleado" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">✕</button>
+      <h2 class="text-lg font-semibold mb-4">Registrar Empleado</h2>
+      <p class="text-sm text-gray-600 mb-4">El empleado será asignado a esta sucursal y tendrá acceso únicamente a ella.</p>
+      <form id="form-empleado" class="space-y-3">
+        <div>
+          <label class="text-sm text-gray-700">Nombre</label>
+          <input name="nombre" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Email</label>
+          <input type="email" name="email" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Password</label>
+          <input type="password" name="password" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancel-empleado" class="px-4 py-2 rounded-md border">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Producto (simplificado) -->
+  <div id="modal-producto" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+      <button id="close-modal-producto" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">✕</button>
+      <h2 id="producto-modal-title" class="text-lg font-semibold mb-4">Nuevo Producto</h2>
+      <form id="form-producto" class="space-y-3">
+        <input type="hidden" name="id" />
+        <div>
+          <label class="text-sm text-gray-700">Nombre</label>
+          <input name="nombre" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Descripción</label>
+          <textarea name="descripcion" required class="mt-1 w-full border rounded-md px-3 py-2"></textarea>
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Precio</label>
+          <input type="number" step="0.01" name="precio" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Stock</label>
+          <input type="number" name="stock" min="0" value="0" required class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">URL Imagen</label>
+          <input name="urlImagen" class="mt-1 w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Categoría</label>
+          <div class="flex gap-2">
+            <select name="categoriaId" required class="mt-1 flex-1 border rounded-md px-3 py-2" id="categoria-select">
+              <option value="">Seleccionar categoría</option>
+            </select>
+            <button type="button" id="btn-nueva-categoria" class="mt-1 px-3 py-2 border rounded-md text-sm hover:bg-gray-50">+ Nueva</button>
+          </div>
+        </div>
+        <div id="nueva-categoria-container" class="hidden">
+          <label class="text-sm text-gray-700">Nombre de nueva categoría</label>
+          <div class="flex gap-2">
+            <input id="nueva-categoria-input" class="mt-1 flex-1 border rounded-md px-3 py-2" placeholder="Ej: Bebidas" />
+            <button type="button" id="btn-guardar-categoria" class="mt-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm">Crear</button>
+            <button type="button" id="btn-cancelar-categoria" class="mt-1 px-3 py-2 border rounded-md text-sm">Cancelar</button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancel-producto" class="px-4 py-2 rounded-md border">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  //@ts-nocheck
+  import { getSucursal, actualizarSucursal, getEmpleadosPorSucursal, crearEmpleado, darDeBajaEmpleado, getPedidosPorSucursal, cambiarEstadoPedido, getProductos, getProductosPorSucursal, crearProducto, actualizarProducto, borrarProducto, getCategoriasBySucursal, crearCategoria, getMetodosPago, getTiposEntrega, crearPedido } from '../../../services/sucursal';
+  import { $userStore } from '../../../store/auth';
+
+  const sucursalId = Number(document.querySelector('[data-sucursal-id]')?.getAttribute('data-sucursal-id'));
+
+  const title = document.getElementById('sucursal-title');
+  const sub = document.getElementById('sucursal-sub');
+
+  const tabNuevoPedido = document.getElementById('tab-nuevo-pedido');
+  const tabCarta = document.getElementById('tab-carta');
+  const tabPersonal = document.getElementById('tab-personal');
+  const tabPedidos = document.getElementById('tab-pedidos');
+  const tabConfiguracion = document.getElementById('tab-configuracion');
+  const tabButtons = document.querySelectorAll('.tab-btn');
+
+  const productosBody = document.getElementById('productos-body');
+  const empleadosBody = document.getElementById('empleados-body');
+
+  const modalEmpleado = document.getElementById('modal-empleado');
+  const formEmpleado = document.getElementById('form-empleado');
+
+  const modalProducto = document.getElementById('modal-producto');
+  const formProducto = document.getElementById('form-producto');
+  const productoModalTitle = document.getElementById('producto-modal-title');
+  const categoriaSelect = document.getElementById('categoria-select');
+  const btnNuevaCategoria = document.getElementById('btn-nueva-categoria');
+  const nuevaCategoriaContainer = document.getElementById('nueva-categoria-container');
+  const nuevaCategoriaInput = document.getElementById('nueva-categoria-input');
+  const btnGuardarCategoria = document.getElementById('btn-guardar-categoria');
+  const btnCancelarCategoria = document.getElementById('btn-cancelar-categoria');
+
+  // Configuración
+  const formConfiguracion = document.getElementById('form-configuracion');
+  const configTelefono = document.getElementById('config-telefono') as HTMLInputElement;
+  const configHorario = document.getElementById('config-horario') as HTMLTextAreaElement;
+  const configDireccion = document.getElementById('config-direccion') as HTMLInputElement;
+
+  // Nuevo Pedido
+  const productosDisponibles = document.getElementById('productos-disponibles');
+  const carritoItems = document.getElementById('carrito-items');
+  const carritoTotal = document.getElementById('carrito-total');
+  const formPedido = document.getElementById('form-pedido');
+  const tipoEntregaSelect = document.getElementById('tipo-entrega-select');
+  const metodoPagoSelect = document.getElementById('metodo-pago-select');
+  const direccionInput = document.getElementById('direccion-input') as HTMLInputElement | null;
+
+  let categorias = [];
+  let carrito: Array<{ productoId: number; nombre: string; precio: number; cantidad: number }> = [];
+
+  function toggle(el, show) {
+    if (!el) return;
+    if (show) { el.classList.remove('hidden'); el.classList.add('flex'); }
+    else { el.classList.add('hidden'); el.classList.remove('flex'); }
+  }
+
+  function showTab(name) {
+    tabNuevoPedido?.classList.add('hidden');
+    tabCarta?.classList.add('hidden');
+    tabPersonal?.classList.add('hidden');
+    tabPedidos?.classList.add('hidden');
+    tabConfiguracion?.classList.add('hidden');
+    if (name === 'nuevo-pedido') tabNuevoPedido?.classList.remove('hidden');
+    if (name === 'carta') tabCarta?.classList.remove('hidden');
+    if (name === 'personal') tabPersonal?.classList.remove('hidden');
+    if (name === 'pedidos') tabPedidos?.classList.remove('hidden');
+    if (name === 'configuracion') tabConfiguracion?.classList.remove('hidden');
+  }
+
+  function setRoleVisibility() {
+    const store = $userStore.get() || JSON.parse(localStorage.getItem('userStore') || sessionStorage.getItem('userStore') || '{}');
+    const role = store?.role || store?.Role || 'AdminNegocio';
+    // Empleado: solo pedidos y nuevo pedido
+    if (role === 'Empleado') {
+      tabCarta?.classList.add('hidden');
+      tabPersonal?.classList.add('hidden');
+      showTab('nuevo-pedido');
+      tabButtons.forEach(btn => {
+        const t = btn.getAttribute('data-tab');
+        if (t !== 'pedidos' && t !== 'nuevo-pedido') btn.classList.add('hidden');
+      });
+    } else {
+      // AdminNegocio / SuperAdmin: ver todos
+      showTab('carta');
+    }
+  }
+
+  async function loadSucursal() {
+    try {
+      const s = await getSucursal(sucursalId);
+      if (title) title.textContent = s.nombre;
+      if (sub) sub.textContent = `${s.direccion} • ${s.activo ? 'Activa' : 'Inactiva'}`;
+      
+      // Cargar datos en formulario de configuración
+      if (configTelefono) configTelefono.value = s.telefono || '';
+      if (configHorario) configHorario.value = s.horario || '';
+      if (configDireccion) configDireccion.value = s.direccion || '';
+    } catch (e) { console.error(e); }
+    
+    // Detectar rol
+    const store = $userStore.get() || JSON.parse(localStorage.getItem('userStore') || sessionStorage.getItem('userStore') || '{}');
+    const role = store?.role || store?.Role || 'AdminNegocio';
+    
+    // Load tabs según rol
+    loadProductos();
+    loadPedidos();
+    loadProductosDisponibles();
+    loadMaestros();
+    
+    // Solo AdminNegocio puede ver empleados
+    if (role !== 'Empleado') {
+      loadEmpleados();
+    }
+  }
+
+  async function loadCategorias() {
+    try {
+      categorias = await getCategoriasBySucursal(sucursalId);
+      if (categoriaSelect) {
+        categoriaSelect.innerHTML = '<option value="">Seleccionar categoría</option>' +
+          categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+      }
+    } catch (e) {
+      console.error('Error cargando categorías:', e);
+      categorias = [];
+    }
+  }
+
+  async function loadProductosDisponibles() {
+    if (!productosDisponibles) return;
+    try {
+      const items = await getProductosPorSucursal(sucursalId);
+      const productosActivos = items.filter(p => p.activo);
+      
+      // Agrupar productos por categoría
+      const productosPorCategoria = productosActivos.reduce((acc, p) => {
+        const categoria = p.categoriaNombre || 'Sin categoría';
+        if (!acc[categoria]) {
+          acc[categoria] = [];
+        }
+        acc[categoria].push(p);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      // Renderizar productos agrupados por categoría
+      productosDisponibles.innerHTML = Object.entries(productosPorCategoria).map(([categoria, productos]) => `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2 px-2 py-1 bg-gray-100 rounded">${categoria}</h4>
+          <div class="space-y-2">
+            ${productos.map(p => `
+              <div class="flex items-center gap-3 p-2 border rounded hover:bg-gray-50 ${p.stock === 0 ? 'opacity-60' : ''}">
+                ${p.urlImagen ? `
+                  <img src="${p.urlImagen}" alt="${p.nombre}" class="w-16 h-16 object-cover rounded-md" 
+                    onerror="this.style.display='none'" />
+                ` : `
+                  <div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                    Sin imagen
+                  </div>
+                `}
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate">${p.nombre}</div>
+                  <div class="text-sm text-gray-600">$${p.precio.toFixed(2)}</div>
+                  <div class="text-xs ${p.stock === 0 ? 'text-red-600 font-semibold' : p.stock <= 5 ? 'text-orange-600' : 'text-gray-500'}">
+                    Stock: ${p.stock} ${p.stock === 0 ? '(Sin stock)' : p.stock <= 5 ? '(Poco stock)' : ''}
+                  </div>
+                </div>
+                <button class="btn-add-carrito px-3 py-1 rounded-md text-white text-sm flex-shrink-0 ${p.stock === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}" 
+                  data-id="${p.id}" 
+                  data-nombre="${p.nombre}" 
+                  data-stock="${p.stock}"
+                  data-precio="${p.precio}"
+                  ${p.stock === 0 ? 'disabled' : ''}>
+                  ${p.stock === 0 ? 'Sin stock' : 'Agregar'}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      productosDisponibles.innerHTML = '<p class="text-red-600 text-sm">Error cargando productos</p>';
+    }
+  }
+
+  function updateCarrito() {
+    if (!carritoItems || !carritoTotal) return;
+    
+    if (carrito.length === 0) {
+      carritoItems.innerHTML = '<p class="text-gray-500 text-sm">El carrito está vacío</p>';
+      carritoTotal.textContent = '$0.00';
+      return;
+    }
+
+    const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    
+    carritoItems.innerHTML = carrito.map(item => `
+      <div class="flex items-center justify-between p-2 border rounded">
+        <div class="flex-1">
+          <div class="font-medium text-sm">${item.nombre}</div>
+          <div class="text-xs text-gray-600">$${item.precio.toFixed(2)} x ${item.cantidad}</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="btn-dec-carrito px-2 py-1 border rounded text-sm" data-id="${item.productoId}">-</button>
+          <span class="text-sm font-medium">${item.cantidad}</span>
+          <button class="btn-inc-carrito px-2 py-1 border rounded text-sm" data-id="${item.productoId}">+</button>
+          <button class="btn-remove-carrito px-2 py-1 border rounded text-sm text-red-600" data-id="${item.productoId}">×</button>
+        </div>
+      </div>
+    `).join('');
+    
+    carritoTotal.textContent = `$${total.toFixed(2)}`;
+  }
+
+  async function loadMaestros() {
+    try {
+      const [metodosPago, tiposEntrega] = await Promise.all([getMetodosPago(), getTiposEntrega()]);
+      
+      if (metodoPagoSelect) {
+        metodoPagoSelect.innerHTML = '<option value="">Seleccionar...</option>' +
+          metodosPago.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+      }
+      
+      if (tipoEntregaSelect) {
+        tipoEntregaSelect.innerHTML = '<option value="">Seleccionar...</option>' +
+          tiposEntrega.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+      }
+    } catch (e) {
+      console.error('Error cargando maestros:', e);
+    }
+  }
+
+  async function loadProductos() {
+    if (!productosBody) return;
+    productosBody.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-center text-gray-500">Cargando...</td></tr>';
+    try {
+      const items = await getProductosPorSucursal(sucursalId);
+      productosBody.innerHTML = items.map(p => `
+        <tr>
+          <td class="px-4 py-3">${p.nombre}</td>
+          <td class="px-4 py-3 text-gray-600">${p.descripcion}</td>
+          <td class="px-4 py-3 font-medium">$ ${p.precio.toFixed(2)}</td>
+          <td class="px-4 py-3 ${p.stock === 0 ? 'text-red-600 font-semibold' : 'text-gray-900'}">${p.stock}</td>
+          <td class="px-4 py-3 text-gray-600">${p.categoriaNombre}</td>
+          <td class="px-4 py-3 space-x-2">
+            <button class="btn-edit-producto px-3 py-1 rounded-md border" data-id="${p.id}">Editar</button>
+            <button class="btn-del-producto px-3 py-1 rounded-md border text-red-600" data-id="${p.id}">Borrar</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      productosBody.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-center text-red-600">Error cargando productos</td></tr>';
+    }
+  }
+
+  async function loadEmpleados() {
+    if (!empleadosBody) return;
+    empleadosBody.innerHTML = '<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">Cargando...</td></tr>';
+    try {
+      const items = await getEmpleadosPorSucursal(sucursalId);
+      empleadosBody.innerHTML = items.map(e => `
+        <tr>
+          <td class="px-4 py-3">${e.nombre}</td>
+          <td class="px-4 py-3 text-gray-600">${e.email}</td>
+          <td class="px-4 py-3">
+            <button class="btn-baja-empleado px-3 py-1 rounded-md border text-red-600 hover:bg-red-50" data-id="${e.id}">Dar de baja</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      // Silenciosamente no cargar si es empleado (no tiene permisos)
+      empleadosBody.innerHTML = '<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">No hay datos disponibles</td></tr>';
+    }
+  }
+
+  function renderPedidoCard(p) {
+    const estados = ['Pendiente','En Preparacion','Listo','Entregado'];
+    const next = (curr) => {
+      const idx = estados.indexOf(curr);
+      if (idx < 0 || idx >= estados.length - 1) return null;
+      return idx + 2; // mapping to ids: 1..4 (Pendiente=1)
+    };
+
+    const nextId = next(p.estadoPedidoNombre);
+    const isCancelado = p.estadoPedidoNombre === 'Cancelado';
+    
+    let avanzarBtn = '';
+    if (!isCancelado && nextId) {
+      avanzarBtn = `<button class="btn-advance px-2 py-1 rounded-md bg-indigo-600 text-white" data-id="${p.id}" data-next="${nextId}">Avanzar</button>`;
+    }
+    const cancelarBtn = !isCancelado && p.estadoPedidoNombre !== 'Entregado' 
+      ? `<button class="btn-cancel px-2 py-1 rounded-md bg-red-600 text-white ml-2" data-id="${p.id}">Cancelar</button>` 
+      : '';
+
+    return `<div class="border rounded-md p-3 bg-white shadow-sm ${isCancelado ? 'opacity-60' : ''}">
+      <div class="flex justify-between">
+        <div class="font-medium">#${p.id} • ${p.clienteNombre}</div>
+        <div class="text-sm text-gray-600">$ ${p.total.toFixed(2)}</div>
+      </div>
+      <div class="text-sm text-gray-600">${p.resumenItems}</div>
+      <div class="mt-1 text-sm text-gray-700"><span class="font-medium">📞</span> ${p.clienteTelefono}</div>
+      <div class="mt-2 text-xs text-gray-500">${new Date(p.fechaCreacion).toLocaleString()}</div>
+      <div class="mt-2">${avanzarBtn}${cancelarBtn}</div>
+    </div>`;
+  }
+
+  async function loadPedidos(estadoFilter = '') {
+    const colPend = document.getElementById('col-pendientes');
+    const colCocina = document.getElementById('col-cocina');
+    const colListos = document.getElementById('col-listos');
+    const colEntregados = document.getElementById('col-entregados');
+    const colCancelados = document.getElementById('col-cancelados');
+    if (colPend) colPend.innerHTML = '';
+    if (colCocina) colCocina.innerHTML = '';
+    if (colListos) colListos.innerHTML = '';
+    if (colEntregados) colEntregados.innerHTML = '';
+    if (colCancelados) colCancelados.innerHTML = '';
+
+    try {
+      const estados = estadoFilter ? [estadoFilter] : ['Pendiente','En Preparacion','Listo','Entregado','Cancelado'];
+      for (const est of estados) {
+        const data = await getPedidosPorSucursal(sucursalId, est);
+        const html = data.map(renderPedidoCard).join('');
+        if (est === 'Pendiente' && colPend) colPend.innerHTML = html;
+        if (est === 'En Preparacion' && colCocina) colCocina.innerHTML = html;
+        if (est === 'Listo' && colListos) colListos.innerHTML = html;
+        if (est === 'Entregado' && colEntregados) colEntregados.innerHTML = html;
+        if (est === 'Cancelado' && colCancelados) colCancelados.innerHTML = html;
+      }
+    } catch (e) {
+      if (colPend) colPend.innerHTML = '<div class="text-red-600">Error cargando pedidos</div>';
+    }
+  }
+
+  // Events
+  document.querySelectorAll('.tab-btn')?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.getAttribute('data-tab');
+      if (t) showTab(t);
+    });
+  });
+
+  document.getElementById('btn-add-empleado')?.addEventListener('click', () => toggle(modalEmpleado, true));
+  document.getElementById('close-modal-empleado')?.addEventListener('click', () => toggle(modalEmpleado, false));
+  document.getElementById('cancel-empleado')?.addEventListener('click', () => toggle(modalEmpleado, false));
+
+  formEmpleado?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(formEmpleado));
+    
+    const payload = {
+      nombre: String(data.nombre || ''),
+      email: String(data.email || ''),
+      password: String(data.password || ''),
+      sucursalId: sucursalId,
+    };
+    
+    console.log('Creando empleado con payload:', payload);
+    
+    try {
+      await crearEmpleado(payload);
+      toggle(modalEmpleado, false);
+      formEmpleado.reset();
+      alert('Empleado creado exitosamente. Será asignado a esta sucursal.');
+      await loadEmpleados();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al crear empleado');
+    }
+  });
+
+  document.getElementById('btn-add-producto')?.addEventListener('click', () => {
+    if (productoModalTitle) productoModalTitle.textContent = 'Nuevo Producto';
+    formProducto?.reset();
+    loadCategorias();
+    toggle(modalProducto, true);
+  });
+  document.getElementById('close-modal-producto')?.addEventListener('click', () => toggle(modalProducto, false));
+  document.getElementById('cancel-producto')?.addEventListener('click', () => toggle(modalProducto, false));
+
+  // Nuevo Pedido - Event Delegation
+  productosDisponibles?.addEventListener('click', (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('btn-add-carrito')) {
+      const id = parseInt(target.dataset.id || '0');
+      const nombre = target.dataset.nombre || '';
+      const precio = parseFloat(target.dataset.precio || '0');
+      const stock = parseInt(target.dataset.stock || '0');
+      
+      // Validar stock disponible
+      if (stock === 0) {
+        alert('Este producto no tiene stock disponible');
+        return;
+      }
+      
+      const existing = carrito.find(item => item.productoId === id);
+      if (existing) {
+        // Validar que no exceda el stock
+        if (existing.cantidad >= stock) {
+          alert(`Solo hay ${stock} unidades disponibles de este producto`);
+          return;
+        }
+        existing.cantidad++;
+      } else {
+        carrito.push({ productoId: id, nombre, precio, cantidad: 1 });
+      }
+      updateCarrito();
+    }
+  });
+
+  carritoItems?.addEventListener('click', async (e: Event) => {
+    const target = e.target as HTMLElement;
+    const id = parseInt(target.dataset.id || '0');
+    
+    if (target.classList.contains('btn-inc-carrito')) {
+      const item = carrito.find(i => i.productoId === id);
+      if (item) {
+        // Obtener stock actual del producto
+        try {
+          const productos = await getProductosPorSucursal(sucursalId);
+          const producto = productos.find(p => p.id === id);
+          if (producto && item.cantidad >= producto.stock) {
+            alert(`Solo hay ${producto.stock} unidades disponibles de este producto`);
+            return;
+          }
+        } catch (e) {
+          console.error('Error verificando stock:', e);
+        }
+        item.cantidad++;
+        updateCarrito();
+      }
+    } else if (target.classList.contains('btn-dec-carrito')) {
+      const item = carrito.find(i => i.productoId === id);
+      if (item && item.cantidad > 1) {
+        item.cantidad--;
+        updateCarrito();
+      }
+    } else if (target.classList.contains('btn-remove-carrito')) {
+      carrito = carrito.filter(i => i.productoId !== id);
+      updateCarrito();
+    }
+  });
+
+  tipoEntregaSelect?.addEventListener('change', (e: Event) => {
+    const target = e.target as HTMLSelectElement;
+    const tipoId = parseInt(target.value);
+    
+    if (direccionInput) {
+      // ID 2 es Delivery según el seeding
+      if (tipoId === 2) {
+        direccionInput.disabled = false;
+        direccionInput.required = true;
+      } else {
+        direccionInput.disabled = true;
+        direccionInput.required = false;
+        direccionInput.value = '';
+      }
+    }
+  });
+
+  formPedido?.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    
+    if (carrito.length === 0) {
+      alert('El carrito está vacío');
+      return;
+    }
+    
+    const form = e.target as HTMLFormElement;
+    const data = new FormData(form);
+    
+    try {
+      await crearPedido({
+        nombreCliente: String(data.get('nombreCliente') || ''),
+        telefonoCliente: String(data.get('telefonoCliente') || ''),
+        direccionCliente: String(data.get('direccionCliente') || ''),
+        tipoEntregaId: parseInt(String(data.get('tipoEntregaId') || '0')),
+        metodoPagoId: parseInt(String(data.get('metodoPagoId') || '0')),
+        observaciones: String(data.get('observaciones') || ''),
+        sucursalId: sucursalId,
+        items: carrito.map(item => ({
+          productoId: item.productoId,
+          cantidad: item.cantidad,
+          precioUnitario: item.precio
+        }))
+      });
+      
+      alert('Pedido creado exitosamente');
+      carrito = [];
+      form.reset();
+      updateCarrito();
+      await loadPedidos();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al crear pedido');
+    }
+  });
+
+  // Categoria creation handlers
+  btnNuevaCategoria?.addEventListener('click', () => {
+    if (nuevaCategoriaContainer) {
+      nuevaCategoriaContainer.classList.remove('hidden');
+    }
+  });
+
+  btnCancelarCategoria?.addEventListener('click', () => {
+    if (nuevaCategoriaContainer) {
+      nuevaCategoriaContainer.classList.add('hidden');
+    }
+    if (nuevaCategoriaInput) nuevaCategoriaInput.value = '';
+  });
+
+  btnGuardarCategoria?.addEventListener('click', async () => {
+    const nombre = nuevaCategoriaInput?.value?.trim();
+    if (!nombre) {
+      alert('Ingresa un nombre para la categoría');
+      return;
+    }
+    try {
+      const nuevaCat = await crearCategoria(nombre, sucursalId);
+      categorias.push(nuevaCat);
+      if (categoriaSelect) {
+        const opt = document.createElement('option');
+        opt.value = String(nuevaCat.id);
+        opt.textContent = nuevaCat.nombre;
+        opt.selected = true;
+        categoriaSelect.appendChild(opt);
+      }
+      if (nuevaCategoriaContainer) nuevaCategoriaContainer.classList.add('hidden');
+      if (nuevaCategoriaInput) nuevaCategoriaInput.value = '';
+    } catch (err) {
+      alert('Error al crear categoría: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+    }
+  });
+
+  document.addEventListener('click', async (e) => {
+    const t = e.target;
+    if (!t) return;
+    if (t.classList?.contains('btn-edit-producto')) {
+      const id = Number(t.getAttribute('data-id'));
+      const row = t.closest('tr');
+      if (!row) return;
+      const nombre = row.children[0].textContent || '';
+      const descripcion = row.children[1].textContent || '';
+      const precioText = row.children[2].textContent?.replace('$','').trim() || '0';
+      const precio = Number(precioText);
+      const stock = Number(row.children[3].textContent || '0');
+      if (productoModalTitle) productoModalTitle.textContent = 'Editar Producto';
+      if (formProducto) {
+        (formProducto.querySelector('input[name="id"]')).value = String(id);
+        (formProducto.querySelector('input[name="nombre"]')).value = nombre;
+        (formProducto.querySelector('textarea[name="descripcion"]')).value = descripcion;
+        (formProducto.querySelector('input[name="precio"]')).value = String(precio);
+        (formProducto.querySelector('input[name="stock"]')).value = String(stock);
+      }
+      toggle(modalProducto, true);
+    }
+    if (t.classList?.contains('btn-del-producto')) {
+      const id = Number(t.getAttribute('data-id'));
+      if (confirm('¿Eliminar producto?')) {
+        try { await borrarProducto(id); await loadProductos(); } catch (err) { alert('Error al eliminar'); }
+      }
+    }
+    if (t.classList?.contains('btn-baja-empleado')) {
+      const id = Number(t.getAttribute('data-id'));
+      if (confirm('¿Dar de baja a este empleado? No podrá iniciar sesión.')) {
+        try { await darDeBajaEmpleado(id); await loadEmpleados(); } catch (err) { alert('Error al dar de baja'); }
+      }
+    }
+    if (t.classList?.contains('btn-advance')) {
+      const id = Number(t.getAttribute('data-id'));
+      const next = Number(t.getAttribute('data-next'));
+      try { await cambiarEstadoPedido(id, next); await loadPedidos(); } catch (err) { alert('No se pudo avanzar'); }
+    }
+    if (t.classList?.contains('btn-cancel')) {
+      const id = Number(t.getAttribute('data-id'));
+      if (confirm('¿Cancelar este pedido?')) {
+        try { await cambiarEstadoPedido(id, 5); await loadPedidos(); } catch (err) { alert('No se pudo cancelar'); }
+      }
+    }
+  });
+
+  formProducto?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(formProducto));
+    try {
+      const id = Number(data.id || 0);
+      const payload = {
+        nombre: String(data.nombre || ''),
+        descripcion: String(data.descripcion || ''),
+        precio: Number(data.precio || 0),
+        stock: Number(data.stock || 0),
+        urlImagen: String(data.urlImagen || ''),
+        categoriaId: Number(data.categoriaId || 0),
+        sucursalId: sucursalId,
+      };
+      if (id > 0) {
+        await actualizarProducto({ id, ...payload });
+      } else {
+        await crearProducto(payload);
+      }
+      toggle(modalProducto, false);
+      await loadProductos();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al guardar producto');
+    }
+  });
+
+  // Init
+  setRoleVisibility();
+  loadSucursal(); // loadSucursal ya llama internamente a loadProductos, loadPedidos, loadProductosDisponibles y loadMaestros
+  loadCategorias();
+
+  // Formulario de Configuración
+  formConfiguracion?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const data = {
+        direccion: configDireccion?.value || '',
+        telefono: configTelefono?.value || '',
+        horario: configHorario?.value || null,
+      };
+      await actualizarSucursal(sucursalId, data);
+      alert('Configuración actualizada correctamente');
+      await loadSucursal();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al actualizar configuración');
+    }
+  });
+
+  // Filtros pedidos
+  document.querySelectorAll('.filtro-estado')?.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const est = btn.getAttribute('data-estado') || '';
+      await loadPedidos(est);
+    });
+  });
+</script>
+</AuthLayout>

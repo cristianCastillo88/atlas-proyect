@@ -1,0 +1,258 @@
+---
+import { getSucursalPublica } from '../services/public';
+import CartDrawer from '../components/CartDrawer.astro';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/404');
+}
+
+let sucursal;
+try {
+  sucursal = await getSucursalPublica(slug);
+} catch (error) {
+  return Astro.redirect('/404');
+}
+
+// Agrupar productos por categoría
+const productosPorCategoria = sucursal.productos.reduce((acc, producto) => {
+  const categoria = producto.categoriaNombre || 'Sin categoría';
+  if (!acc[categoria]) {
+    acc[categoria] = [];
+  }
+  acc[categoria].push(producto);
+  return acc;
+}, {} as Record<string, typeof sucursal.productos>);
+
+const categorias = Object.keys(productosPorCategoria);
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{sucursal.nombre} - Menú</title>
+  <meta name="description" content={`Menú de ${sucursal.nombre} - ${sucursal.direccion}`}>
+</head>
+<body class="bg-gray-50">
+  
+  <!-- Hero Section -->
+  <header class="bg-gradient-to-r from-green-600 to-green-700 text-white">
+    <div class="container mx-auto px-4 py-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-3">{sucursal.nombre}</h1>
+      <p class="text-lg md:text-xl opacity-90 flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+        </svg>
+        {sucursal.direccion}
+      </p>
+      <p class="mt-2 opacity-80">
+        📞 {sucursal.telefono}
+      </p>
+    </div>
+  </header>
+
+  <!-- Navegación Sticky de Categorías -->
+  {categorias.length > 1 && (
+    <nav id="category-nav" class="sticky top-0 z-30 bg-white shadow-md">
+      <div class="container mx-auto px-4">
+        <div class="flex gap-2 overflow-x-auto py-3 no-scrollbar">
+          {categorias.map(categoria => (
+            <a 
+              href={`#${categoria.toLowerCase().replace(/\s+/g, '-')}`}
+              class="category-link px-4 py-2 rounded-full bg-gray-100 hover:bg-green-600 hover:text-white transition-colors whitespace-nowrap text-sm font-medium"
+            >
+              {categoria}
+            </a>
+          ))}
+        </div>
+      </div>
+    </nav>
+  )}
+
+  <!-- Menú - Productos por Categoría -->
+  <main class="container mx-auto px-4 py-8 pb-32">
+    {Object.entries(productosPorCategoria).map(([categoria, productos]) => (
+      <section id={categoria.toLowerCase().replace(/\s+/g, '-')} class="mb-12 scroll-mt-24">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-green-600 inline-block pb-2">
+          {categoria}
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {productos.map(producto => (
+            <div class={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow ${producto.stock === 0 ? 'opacity-60' : ''}`}>
+              {/* Imagen del Producto */}
+              <div class="relative">
+                {producto.urlImagen ? (
+                  <img 
+                    src={producto.urlImagen} 
+                    alt={producto.nombre}
+                    class="w-full h-48 object-cover product-image"
+                  />
+                ) : (
+                  <div class="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400">
+                    Sin imagen
+                  </div>
+                )}
+                {producto.stock === 0 && (
+                  <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-lg">SIN STOCK</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Info del Producto */}
+              <div class="p-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">{producto.nombre}</h3>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">{producto.descripcion}</p>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-2xl font-bold text-green-600">${producto.precio.toFixed(2)}</span>
+                    {producto.stock > 0 && producto.stock <= 5 && (
+                      <p class="text-xs text-orange-600 font-semibold mt-1">¡Últimas {producto.stock} unidades!</p>
+                    )}
+                  </div>
+                  <button 
+                    class="btn-add-product px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    data-id={producto.id}
+                    data-nombre={producto.nombre}
+                    data-precio={producto.precio}
+                    data-stock={producto.stock}
+                    data-sucursal={sucursal.id}
+                    disabled={producto.stock === 0}
+                  >
+                    {producto.stock === 0 ? 'Agotado' : 'Agregar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    {sucursal.productos.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-xl text-gray-500">No hay productos disponibles en este momento.</p>
+      </div>
+    )}
+  </main>
+
+  <!-- Cart Drawer -->
+  <CartDrawer 
+    metodosPago={sucursal.metodosPago}
+    tiposEntrega={sucursal.tiposEntrega}
+    sucursalTelefono={sucursal.telefono}
+    sucursalNombre={sucursal.nombre}
+  />
+
+  <style>
+    /* Ocultar scrollbar en navegación de categorías */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Limitar líneas de descripción */
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+
+  <script>
+    import { agregarItem } from '../store/cart';
+
+    // Esperar a que el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      // Manejar errores de carga de imágenes de productos
+      document.querySelectorAll('.product-image').forEach(img => {
+        img.addEventListener('error', (e) => {
+          const target = e.target as HTMLImageElement;
+          const placeholder = document.createElement('div');
+          placeholder.className = 'w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400';
+          placeholder.textContent = 'Sin imagen';
+          target.replaceWith(placeholder);
+        });
+      });
+
+      // Agregar productos al carrito
+      document.querySelectorAll('.btn-add-product').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const id = parseInt(target.dataset.id || '0');
+        const nombre = target.dataset.nombre || '';
+        const precio = parseFloat(target.dataset.precio || '0');
+        const stock = parseInt(target.dataset.stock || '0');
+        const sucursalId = parseInt(target.dataset.sucursal || '0');
+
+        try {
+          agregarItem({ id, nombre, precio, stock }, sucursalId);
+          
+          // Feedback visual
+          target.textContent = '✓ Agregado';
+          target.classList.add('bg-green-800');
+          setTimeout(() => {
+            target.textContent = 'Agregar';
+            target.classList.remove('bg-green-800');
+          }, 1000);
+        } catch (error) {
+          console.error('Error al agregar al carrito:', error);
+          if (error instanceof Error) {
+            alert(error.message);
+          } else {
+            alert('Error al agregar el producto');
+          }
+        }
+      });
+    });
+
+    // Scroll suave para navegación de categorías
+    document.querySelectorAll('.category-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = (e.currentTarget as HTMLAnchorElement).getAttribute('href');
+        if (href) {
+          const target = document.querySelector(href);
+          if (target) {
+            const offset = 100; // Espacio para el nav sticky
+            const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+          }
+        }
+      });
+    });
+
+    // Highlight de categoría activa en scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          document.querySelectorAll('.category-link').forEach(link => {
+            link.classList.remove('bg-green-600', 'text-white');
+            link.classList.add('bg-gray-100');
+          });
+          const activeLink = document.querySelector(`.category-link[href="#${id}"]`);
+          if (activeLink) {
+            activeLink.classList.remove('bg-gray-100');
+            activeLink.classList.add('bg-green-600', 'text-white');
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('section[id]').forEach(section => {
+      observer.observe(section);
+    });
+    });
+  </script>
+</body>
+</html>

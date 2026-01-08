@@ -1,0 +1,24 @@
+---
+// No hay lógica adicional en el frontmatter para este layout básico
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Clon de Pedix - App de pedidos de comida" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Pedix Clone</title>
+    <!-- Fuente sans-serif por defecto -->
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Slot para renderizar el contenido de las páginas -->
+    <slot />
+  </body>
+</html>

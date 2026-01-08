@@ -1,0 +1,104 @@
+---
+import { getNegocioPublico } from '../services/public';
+
+export const prerender = false;
+
+const { negocio } = Astro.params;
+
+if (!negocio) {
+  return Astro.redirect('/404');
+}
+
+// Convertir a minúsculas para buscar el negocio
+const negocioSlug = negocio.toLowerCase();
+
+let negocioData;
+try {
+  negocioData = await getNegocioPublico(negocioSlug);
+} catch (error) {
+  console.error(`Negocio no encontrado: ${negocioSlug}`, error);
+  return Astro.redirect('/404');
+}
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{negocioData.nombre} - Seleccionar Sucursal</title>
+  <meta name="description" content={`Selecciona una sucursal de ${negocioData.nombre}`}>
+</head>
+<body class="bg-gray-50">
+  
+  <!-- Hero Section -->
+  <header class="bg-gradient-to-r from-green-600 to-green-700 text-white">
+    <div class="container mx-auto px-4 py-12 text-center">
+      {negocioData.urlLogo && (
+        <img 
+          src={negocioData.urlLogo} 
+          alt={negocioData.nombre}
+          class="h-24 mx-auto mb-4 object-contain"
+        />
+      )}
+      <h1 class="text-4xl md:text-5xl font-bold mb-3">{negocioData.nombre}</h1>
+      <p class="text-lg md:text-xl opacity-90">
+        Selecciona tu sucursal más cercana
+      </p>
+    </div>
+  </header>
+
+  <!-- Lista de Sucursales -->
+  <main class="container mx-auto px-4 py-12">
+    {negocioData.sucursales.length === 0 ? (
+      <div class="text-center py-12">
+        <p class="text-xl text-gray-500">No hay sucursales disponibles en este momento.</p>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {negocioData.sucursales.map(sucursal => (
+          <a 
+            href={`/${negocioData.slug}/${sucursal.slug.replace(`${negocioData.slug}-`, '')}`}
+            class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border-2 border-transparent hover:border-green-600"
+          >
+            <div class="flex flex-col h-full">
+              <h2 class="text-2xl font-bold text-gray-800 mb-3">{sucursal.nombre}</h2>
+              
+              <div class="flex items-start gap-2 mb-3 text-gray-600">
+                <svg class="w-5 h-5 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="flex-1">{sucursal.direccion}</span>
+              </div>
+              
+              <div class="flex items-center gap-2 mb-4 text-gray-600">
+                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                </svg>
+                <span>{sucursal.telefono}</span>
+              </div>
+              
+              <div class="mt-auto">
+                <span class="inline-flex items-center gap-2 text-green-600 font-semibold">
+                  Ver Menú
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    )}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-6 mt-12">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-gray-400">© 2025 {negocioData.nombre}. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

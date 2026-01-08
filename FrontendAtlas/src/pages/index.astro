@@ -1,0 +1,84 @@
+---
+// Landing page
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <div class="bg-gray-50 text-gray-900">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-4">
+          <div class="text-2xl font-bold text-blue-600">Atlas</div>
+          <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Ingresar</a>
+        </div>
+      </div>
+    </header>
+
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="text-4xl md:text-6xl font-bold mb-4">Gestiona tu gastronomía con Atlas</h1>
+      <p class="text-xl md:text-2xl mb-8">La solución completa para restaurantes modernos: pedidos eficientes, multi-sucursal y carta digital QR.</p>
+      <a href="/register" class="bg-white text-blue-600 px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition">Comenzar Ahora</a>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold text-center mb-12">Características Principales</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Gestión de Pedidos -->
+        <div class="text-center">
+          <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Gestión de Pedidos</h3>
+          <p class="text-gray-600">Administra pedidos en tiempo real, desde recepción hasta entrega, con notificaciones automáticas.</p>
+        </div>
+        <!-- Multi-Sucursal -->
+        <div class="text-center">
+          <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Multi-Sucursal</h3>
+          <p class="text-gray-600">Controla múltiples sucursales desde un solo panel, sincronizando inventarios y operaciones.</p>
+        </div>
+        <!-- Carta QR Digital -->
+        <div class="text-center">
+          <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 15h4.01M12 21h4.01M12 18h4.01M6 12h4.01M6 15h4.01M6 21h4.01M6 18h4.01M2 12h4.01M2 15h4.01M2 21h4.01M2 18h4.01"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Carta QR Digital</h3>
+          <p class="text-gray-600">Ofrece una carta digital interactiva accesible vía QR, actualizable en tiempo real.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="text-lg font-semibold mb-4 md:mb-0">Atlas</div>
+        <div class="flex space-x-6">
+          <a href="/about" class="hover:text-gray-300">Sobre Nosotros</a>
+          <a href="/contact" class="hover:text-gray-300">Contacto</a>
+          <a href="/privacy" class="hover:text-gray-300">Política de Privacidad</a>
+          <a href="/terms" class="hover:text-gray-300">Términos de Servicio</a>
+        </div>
+      </div>
+      <div class="mt-4 text-center text-gray-400">
+        © 2025 Atlas. Todos los derechos reservados.
+      </div>
+    </div>
+  </footer>
+</div>
+</Layout>

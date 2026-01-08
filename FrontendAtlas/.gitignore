@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+.output/
+.vercel/
+.netlify/
+
+# Environment variables
+.env
+.env*.local
+.env.production
+.env.development
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Astro
+.astro/
+
+# Logs
+logs
+*.log
+
+# OS
+Thumbs.db
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist
+.temp
+.cache
+
+# Misc
+*.tsbuildinfo
+.eslintcache

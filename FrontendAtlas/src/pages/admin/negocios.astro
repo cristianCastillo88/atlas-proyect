@@ -1,0 +1,562 @@
+---
+// Dashboard para AdminNegocio
+import AuthLayout from '../../layouts/AuthLayout.astro';
+---
+
+<AuthLayout title="Gestión de Restaurantes - Atlas">
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+      <div>
+        <h1 id="page-title" class="text-2xl font-bold">Gestión de Restaurantes</h1>
+        <p id="negocio-name" class="text-sm text-gray-600"></p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-nuevo-restaurante" class="hidden bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">+ Nuevo Restaurante</button>
+        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Cerrar Sesión</button>
+      </div>
+    </header>
+    <main class="flex-1 p-6">
+      <div id="sucursales-container" class="w-full">
+        <p class="text-gray-500">Cargando...</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Nuevo Restaurante -->
+  <div id="modal-nuevo-restaurante" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <h2 class="text-xl font-bold mb-4">Nuevo Restaurante</h2>
+      <form id="form-nuevo-restaurante" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Nombre del Restaurante</label>
+          <input name="nombre" required class="w-full border rounded-md px-3 py-2" placeholder="Ej: Pizzeria Don Pepe" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Dirección Sucursal Principal</label>
+          <input name="direccion" required class="w-full border rounded-md px-3 py-2" placeholder="Calle Principal 123" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Teléfono</label>
+          <input name="telefono" required class="w-full border rounded-md px-3 py-2" placeholder="123456789" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Email del Administrador</label>
+          <input name="email" type="email" required class="w-full border rounded-md px-3 py-2" placeholder="admin@restaurante.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Contraseña</label>
+          <input name="password" type="password" required class="w-full border rounded-md px-3 py-2" placeholder="Mínimo 6 caracteres" />
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button type="button" id="btn-cancelar-restaurante" class="px-4 py-2 border rounded-md hover:bg-gray-50">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Nueva Sucursal -->
+  <div id="modal-nueva-sucursal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <h2 class="text-xl font-bold mb-4">Nueva Sucursal</h2>
+      <form id="form-nueva-sucursal" class="space-y-4">
+        <input type="hidden" name="negocioId" id="sucursal-negocio-id" />
+        <div>
+          <label class="block text-sm font-medium mb-1">Nombre de la Sucursal</label>
+          <input name="nombre" required class="w-full border rounded-md px-3 py-2" placeholder="Ej: Centro, Zona Norte" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Dirección</label>
+          <input name="direccion" required class="w-full border rounded-md px-3 py-2" placeholder="Calle 123" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Teléfono</label>
+          <input name="telefono" required class="w-full border rounded-md px-3 py-2" placeholder="123456789" />
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button type="button" id="btn-cancelar-sucursal" class="px-4 py-2 border rounded-md hover:bg-gray-50">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AuthLayout>
+
+<script>
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:5044';
+  
+  // Verificar autenticación
+  const userData = sessionStorage.getItem('userStore') || localStorage.getItem('userStore');
+  const user = userData ? JSON.parse(userData) : null;
+  
+  if (!user || !user.token) {
+    window.location.href = '/login';
+  } else if (user.role === 'Empleado') {
+    // Los empleados deben ser redirigidos directamente a su sucursal asignada
+    if (user.sucursalId || user.SucursalId) {
+      const sucursalId = user.sucursalId || user.SucursalId;
+      window.location.href = `/admin/sucursal/${sucursalId}`;
+    } else {
+      alert('Tu cuenta no tiene una sucursal asignada. Contacta al administrador.');
+      window.location.href = '/login';
+    }
+  }
+  // SuperAdmin y AdminNegocio pueden acceder a esta página
+  
+  const negocioName = document.getElementById('negocio-name');
+  const container = document.getElementById('sucursales-container');
+  
+  // Configurar UI según el rol
+  const pageTitle = document.getElementById('page-title');
+  const btnNuevoRestaurante = document.getElementById('btn-nuevo-restaurante');
+  
+  if (user.role === 'SuperAdmin') {
+    if (pageTitle) pageTitle.textContent = 'Gestión de Restaurantes';
+    if (btnNuevoRestaurante) btnNuevoRestaurante.classList.remove('hidden');
+    loadNegociosForSuperAdmin();
+  } else if (user.role === 'AdminNegocio') {
+    if (pageTitle) pageTitle.textContent = 'Mis Sucursales';
+    loadSucursales();
+  }
+
+  async function loadNegociosForSuperAdmin() {
+    console.log('Cargando negocios para SuperAdmin');
+    try {
+      const res = await fetch(`${API_URL}/api/Admin/tenants`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      console.log('Response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error ${res.status}: ${errorText}`);
+      }
+      
+      const negocios = await res.json();
+      console.log('Negocios recibidos:', negocios);
+      
+      if (negocioName) {
+        negocioName.textContent = 'Gestión de Negocios (SuperAdmin)';
+      }
+      
+      if (container) {
+        if (negocios && negocios.length > 0) {
+          container.innerHTML = `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <table class="w-full">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurante</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Administrador</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sucursales</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  ${negocios.map((n: any) => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${n.nombre}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-600">${n.dueñoEmail}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${n.cantidadSucursales}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${n.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                          ${n.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex gap-2 justify-end">
+                          <button 
+                            class="btn-toggle-negocio px-3 py-1 rounded text-xs ${n.activo ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}"
+                            data-id="${n.id}"
+                            title="${n.activo ? 'Desactivar' : 'Activar'}"
+                          >
+                            ${n.activo ? '🔒' : '✓'}
+                          </button>
+                          <button 
+                            class="btn-nueva-sucursal px-3 py-1 rounded text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                            data-negocio-id="${n.id}"
+                            data-negocio-nombre="${n.nombre}"
+                            title="Nueva Sucursal"
+                          >
+                            + Sucursal
+                          </button>
+                          <button 
+                            class="btn-ver-sucursales px-3 py-1 rounded text-xs bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            data-negocio-id="${n.id}"
+                            data-negocio-nombre="${n.nombre}"
+                            title="Ver Sucursales"
+                          >
+                            👁️ Ver
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr id="sucursales-${n.id}" class="hidden">
+                      <td colspan="5" class="px-6 py-4 bg-gray-50">
+                        <p class="text-gray-500 text-sm">Cargando sucursales...</p>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+          
+          // Agregar event listeners
+          document.querySelectorAll('.btn-toggle-negocio').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const target = e.currentTarget as HTMLElement;
+              const negocioId = parseInt(target.dataset.id || '0');
+              await toggleNegocioStatus(negocioId);
+            });
+          });
+          
+          document.querySelectorAll('.btn-nueva-sucursal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const target = e.currentTarget as HTMLElement;
+              const negocioId = parseInt(target.dataset.negocioId || '0');
+              const negocioNombre = target.dataset.negocioNombre || '';
+              openNuevaSucursalModal(negocioId, negocioNombre);
+            });
+          });
+          
+          document.querySelectorAll('.btn-ver-sucursales').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const target = e.currentTarget as HTMLElement;
+              const negocioId = parseInt(target.dataset.negocioId || '0');
+              const negocioNombre = target.dataset.negocioNombre || '';
+              await toggleSucursalesView(negocioId, negocioNombre);
+            });
+          });
+        } else {
+          container.innerHTML = '<p class="text-gray-500">No hay negocios registrados</p>';
+        }
+      }
+    } catch (err) {
+      console.error('Error completo:', err);
+      if (container) container.innerHTML = '<p class="text-red-600">Error al cargar negocios: ' + (err instanceof Error ? err.message : String(err)) + '</p>';
+    }
+  }
+  
+  async function toggleNegocioStatus(negocioId: number) {
+    try {
+      const res = await fetch(`${API_URL}/api/Admin/tenants/${negocioId}/toggle-status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error al cambiar estado: ${errorText}`);
+      }
+      
+      // Recargar la lista
+      await loadNegociosForSuperAdmin();
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Error al cambiar el estado del negocio: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  }
+  
+  async function toggleSucursalesView(negocioId: number, negocioNombre: string) {
+    const sucursalesDiv = document.getElementById(`sucursales-${negocioId}`);
+    if (!sucursalesDiv) return;
+    
+    // Toggle visibility
+    if (sucursalesDiv.classList.contains('hidden')) {
+      // Cargar y mostrar sucursales
+      sucursalesDiv.classList.remove('hidden');
+      await loadSucursalesForNegocio(negocioId, negocioNombre, sucursalesDiv);
+    } else {
+      // Ocultar
+      sucursalesDiv.classList.add('hidden');
+    }
+  }
+  
+  async function loadSucursalesForNegocio(negocioId: number, negocioNombre: string, container: HTMLElement) {
+    try {
+      const res = await fetch(`${API_URL}/api/sucursales/negocios/${negocioId}`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error('Error al cargar sucursales');
+      }
+      
+      const sucursales = await res.json();
+      
+      if (sucursales && sucursales.length > 0) {
+        container.innerHTML = `
+          <div class="px-6 py-4">
+            <h4 class="font-semibold text-sm mb-3 text-gray-700">Sucursales de ${negocioNombre}</h4>
+            <div class="border rounded overflow-hidden">
+              <table class="w-full">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Nombre</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Dirección</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Teléfono</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Estado</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-600">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                  ${sucursales.map((s: any) => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-2 text-sm">${s.nombre}</td>
+                      <td class="px-4 py-2 text-sm text-gray-600">${s.direccion}</td>
+                      <td class="px-4 py-2 text-sm text-gray-600">${s.telefono || 'N/A'}</td>
+                      <td class="px-4 py-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${s.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                          ${s.activo ? 'Activa' : 'Inactiva'}
+                        </span>
+                      </td>
+                      <td class="px-4 py-2 text-right">
+                        <button 
+                          class="btn-toggle-sucursal px-3 py-1 rounded text-xs ${s.activo ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}"
+                          data-id="${s.id}"
+                        >
+                          ${s.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+        
+        // Agregar event listeners para toggle de sucursales
+        container.querySelectorAll('.btn-toggle-sucursal').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const sucursalId = parseInt(target.dataset.id || '0');
+            await toggleSucursalStatus(sucursalId, negocioId, negocioNombre, container);
+          });
+        });
+      } else {
+        container.innerHTML = '<p class="text-gray-500 text-sm">Este negocio no tiene sucursales registradas</p>';
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      container.innerHTML = '<p class="text-red-600 text-sm">Error al cargar sucursales</p>';
+    }
+  }
+  
+  async function toggleSucursalStatus(sucursalId: number, negocioId: number, negocioNombre: string, container: HTMLElement) {
+    try {
+      const res = await fetch(`${API_URL}/api/sucursales/${sucursalId}/toggle-status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error al cambiar estado: ${errorText}`);
+      }
+      
+      // Recargar las sucursales de este negocio
+      await loadSucursalesForNegocio(negocioId, negocioNombre, container);
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Error al cambiar el estado de la sucursal: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  }
+  
+  async function loadSucursales() {
+    if (!user || !user.negocioId) {
+      console.error('Usuario sin negocioId:', user);
+      if (container) container.innerHTML = '<p class="text-red-600">No se encontró información del negocio. Usuario: ' + (user?.role || 'desconocido') + '</p>';
+      return;
+    }
+    
+    console.log('Cargando sucursales para negocioId:', user.negocioId);
+    
+    try {
+      const res = await fetch(`${API_URL}/api/sucursales/negocios/${user.negocioId}`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      console.log('Response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error ${res.status}: ${errorText}`);
+      }
+      
+      const sucursales = await res.json();
+      console.log('Sucursales recibidas:', sucursales);
+      
+      if (negocioName && user?.name) {
+        negocioName.textContent = user.name;
+      }
+      
+      if (container) {
+        if (sucursales && sucursales.length > 0) {
+          container.innerHTML = sucursales.map((s: any) => `
+            <a href="/admin/sucursal/${s.id}" class="block p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <h3 class="text-lg font-semibold mb-2">${s.nombre}</h3>
+              <p class="text-sm text-gray-600 mb-2">${s.direccion}</p>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${s.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                ${s.activo ? 'Activa' : 'Inactiva'}
+              </span>
+            </a>
+          `).join('');
+        } else {
+          container.innerHTML = '<p class="text-gray-500">No tienes sucursales registradas</p>';
+        }
+      }
+    } catch (err) {
+      console.error('Error completo:', err);
+      if (container) container.innerHTML = '<p class="text-red-600">Error al cargar sucursales: ' + (err instanceof Error ? err.message : String(err)) + '</p>';
+    }
+  }
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('userStore');
+      localStorage.removeItem('userStore');
+      window.location.href = '/login';
+    });
+  }
+
+  // Modales
+  const modalNuevoRestaurante = document.getElementById('modal-nuevo-restaurante');
+  const modalNuevaSucursal = document.getElementById('modal-nueva-sucursal');
+  const formNuevoRestaurante = document.getElementById('form-nuevo-restaurante');
+  const formNuevaSucursal = document.getElementById('form-nueva-sucursal');
+  
+  // Botones para abrir modales
+  if (btnNuevoRestaurante) {
+    btnNuevoRestaurante.addEventListener('click', () => {
+      if (modalNuevoRestaurante) modalNuevoRestaurante.classList.remove('hidden');
+    });
+  }
+  
+  // Botones para cerrar modales
+  document.getElementById('btn-cancelar-restaurante')?.addEventListener('click', () => {
+    if (modalNuevoRestaurante) modalNuevoRestaurante.classList.add('hidden');
+    if (formNuevoRestaurante) formNuevoRestaurante.reset();
+  });
+  
+  document.getElementById('btn-cancelar-sucursal')?.addEventListener('click', () => {
+    if (modalNuevaSucursal) modalNuevaSucursal.classList.add('hidden');
+    if (formNuevaSucursal) formNuevaSucursal.reset();
+  });
+  
+  // Función para abrir modal de nueva sucursal
+  function openNuevaSucursalModal(negocioId: number, negocioNombre: string) {
+    const sucursalNegocioId = document.getElementById('sucursal-negocio-id') as HTMLInputElement;
+    if (sucursalNegocioId) sucursalNegocioId.value = String(negocioId);
+    
+    const modalTitle = modalNuevaSucursal?.querySelector('h2');
+    if (modalTitle) modalTitle.textContent = `Nueva Sucursal para ${negocioNombre}`;
+    
+    if (modalNuevaSucursal) modalNuevaSucursal.classList.remove('hidden');
+  }
+  
+  // Crear nuevo restaurante
+  if (formNuevoRestaurante) {
+    formNuevoRestaurante.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(formNuevoRestaurante);
+      
+      try {
+        const res = await fetch(`${API_URL}/api/Admin/tenants/registrar-negocio`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
+          },
+          body: JSON.stringify({
+            nombreNegocio: formData.get('nombre'),
+            direccionSucursalPrincipal: formData.get('direccion'),
+            telefono: formData.get('telefono'),
+            datosDueno: {
+              nombre: 'Admin',
+              email: formData.get('email'),
+              password: formData.get('password')
+            }
+          })
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
+        }
+        
+        alert('Restaurante creado exitosamente');
+        if (modalNuevoRestaurante) modalNuevoRestaurante.classList.add('hidden');
+        formNuevoRestaurante.reset();
+        await loadNegociosForSuperAdmin();
+      } catch (err) {
+        alert('Error al crear restaurante: ' + (err instanceof Error ? err.message : String(err)));
+      }
+    });
+  }
+  
+  // Crear nueva sucursal
+  if (formNuevaSucursal) {
+    formNuevaSucursal.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(formNuevaSucursal);
+      const negocioId = formData.get('negocioId');
+      
+      try {
+        const res = await fetch(`${API_URL}/api/sucursales`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
+          },
+          body: JSON.stringify({
+            negocioId: parseInt(String(negocioId)),
+            nombre: formData.get('nombre'),
+            direccion: formData.get('direccion'),
+            telefono: formData.get('telefono')
+          })
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
+        }
+        
+        alert('Sucursal creada exitosamente');
+        if (modalNuevaSucursal) modalNuevaSucursal.classList.add('hidden');
+        formNuevaSucursal.reset();
+        await loadNegociosForSuperAdmin();
+      } catch (err) {
+        alert('Error al crear sucursal: ' + (err instanceof Error ? err.message : String(err)));
+      }
+    });
+  }
+</script>
+
+<style>
+  :global(body) {
+    @apply bg-gray-50;
+  }
+</style>
