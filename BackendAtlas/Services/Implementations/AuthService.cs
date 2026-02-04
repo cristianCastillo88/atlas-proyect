@@ -1,13 +1,16 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using BCrypt.Net;
 using BackendAtlas.Domain;
 using BackendAtlas.Services.Interfaces;
 using BackendAtlas.Repositories.Interfaces;
 using Microsoft.Extensions.Logging;
+using BackendAtlas.Configuration;
 
 namespace BackendAtlas.Services.Implementations
 {
@@ -23,17 +26,30 @@ namespace BackendAtlas.Services.Implementations
     public class AuthService : IAuthService
     {
         private readonly IUsuarioRepository _usuarioRepository;
-        private readonly IConfiguration _configuration;
+        private readonly IPasswordPolicyService _passwordPolicyService;
+        private readonly IEmailService _emailService;
+        private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+        private readonly IUnitOfWork _unitOfWork; // Asumiendo que existe, si no, lo inyectaremos en controlador o aquí
+
+        private readonly JwtSettings _jwtSettings;
         private readonly ILogger<AuthService>? _logger;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
         public AuthService(
             IUsuarioRepository usuarioRepository,
-            IConfiguration configuration,
+            IPasswordPolicyService passwordPolicyService,
+            IEmailService emailService,
+            IPasswordResetTokenRepository passwordResetTokenRepository,
+            IUnitOfWork unitOfWork,
+            IOptions<JwtSettings> jwtSettings,
             ILogger<AuthService>? logger = null)
         {
             _usuarioRepository = usuarioRepository;
-            _configuration = configuration;
+            _passwordPolicyService = passwordPolicyService;
+            _emailService = emailService;
+            _passwordResetTokenRepository = passwordResetTokenRepository;
+            _unitOfWork = unitOfWork;
+            _jwtSettings = jwtSettings.Value;
             _logger = logger;
             _tokenValidationParameters = BuildTokenValidationParameters();
         }
@@ -64,7 +80,7 @@ namespace BackendAtlas.Services.Implementations
             if (usuario == null)
             {
                 // SEGURIDAD: No revelar si el usuario existe o no
-                _logger?.LogWarning("Intento de login fallido para email: {Email}", email);
+                _logger?.LogWarning(SecurityLogEvents.LoginFailed, "Login fallido (usuario no encontrado): {Email}", email);
                 
                 // Ejecutar BCrypt.Verify aunque no exista el usuario para prevenir timing attacks
                 BCrypt.Net.BCrypt.Verify(password, "$2a$11$dummy.hash.to.prevent.timing.attacks.xxxxxxxxxxxxxxxxxxxx");
@@ -75,12 +91,12 @@ namespace BackendAtlas.Services.Implementations
             // Verificar password con BCrypt (timing constante)
             if (!BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash))
             {
-                _logger?.LogWarning("Password incorrecto para usuario: {Email}", email);
+                _logger?.LogWarning(SecurityLogEvents.LoginFailed, "Login fallido (password incorrecto): {Email}", email);
                 return null;
             }
 
             // Login exitoso
-            _logger?.LogInformation("Login exitoso para usuario: {Email}, Rol: {Rol}", email, usuario.Rol);
+            _logger?.LogInformation(SecurityLogEvents.LoginSuccess, "Login exitoso: {Email}, Rol: {Rol}, ID: {Id}", email, usuario.Rol, usuario.Id);
 
             var token = GenerateJwtToken(usuario);
             return new LoginResponse
@@ -95,6 +111,137 @@ namespace BackendAtlas.Services.Implementations
             };
         }
 
+        public async Task<bool> CambiarPasswordAsync(int usuarioId, string passwordActual, string passwordNueva, CancellationToken ct = default)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(usuarioId, ct);
+            if (usuario == null) return false;
+
+            if (!BCrypt.Net.BCrypt.Verify(passwordActual, usuario.PasswordHash))
+            {
+                _logger?.LogWarning(SecurityLogEvents.PasswordChangeFailed, "Fallo al cambiar password: Clave actual incorrecta. Usuario {Id}", usuarioId);
+                return false;
+            }
+
+            var validacion = _passwordPolicyService.ValidatePassword(passwordNueva);
+            if (!validacion.IsValid)
+            {
+                throw new ArgumentException($"Password no cumple políticas: {string.Join(", ", validacion.Errors)}");
+            }
+
+            usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordNueva);
+            usuario.UltimaActualizacionPassword = DateTime.UtcNow;
+            usuario.RequiereCambioPassword = false;
+
+            _usuarioRepository.Actualizar(usuario);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger?.LogInformation(SecurityLogEvents.PasswordChangeSuccess, "Password cambiada exitosamente para usuario {Id}", usuarioId);
+            return true;
+        }
+
+        public async Task SolicitarRecuperacionPasswordAsync(string email, CancellationToken ct = default)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorEmailAsync(email, ct);
+            
+            if (usuario == null)
+            {
+                // Seguridad: Timing attack mitigation.
+                await Task.Delay(new Random().Next(100, 300), ct); 
+                return;
+            }
+
+            // 1. Invalidar tokens anteriores
+            await _passwordResetTokenRepository.InvalidarTokensAnterioresDelUsuarioAsync(usuario.Id, ct);
+
+            // 2. Generar token criptográficamente seguro y su hash
+            var rawToken = GenerateSecureToken();
+            var tokenHash = ComputeSha256Hash(rawToken);
+
+            var tokenEntity = new PasswordResetToken
+            {
+                UsuarioId = usuario.Id,
+                Token = tokenHash, // Guardamos HASH en BD
+                FechaExpiracion = DateTime.UtcNow.AddHours(1),
+                Usado = false,
+                Usuario = usuario
+            };
+
+            await _passwordResetTokenRepository.CrearAsync(tokenEntity, ct);
+            
+            // 3. Enviar email con el token RAW (Usuario recibe la llave)
+            await _emailService.EnviarEmailRecuperacionPasswordAsync(usuario.Email, usuario.Nombre, rawToken, ct);
+            
+            _logger?.LogInformation(SecurityLogEvents.PasswordResetRequested, "Solicitud recuperacion para {UserId} ({Email}) procesada.", usuario.Id, email);
+        }
+
+        public async Task<bool> RestablecerPasswordConTokenAsync(string rawToken, string nuevaPassword, CancellationToken ct = default)
+        {
+            // 1. Hashear el token recibido para buscarlo
+            var tokenHash = ComputeSha256Hash(rawToken);
+
+            var tokenEntity = await _passwordResetTokenRepository.ObtenerPorTokenAsync(tokenHash, ct);
+            
+            if (tokenEntity == null || !tokenEntity.EsValido())
+            {
+                _logger?.LogWarning(SecurityLogEvents.PasswordResetFailed, "Intento de restablecimiento con token inválido/expirado.");
+                return false;
+            }
+
+            // 2. Transacción de Negocio
+            using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+            try
+            {
+                var validacion = _passwordPolicyService.ValidatePassword(nuevaPassword);
+                if (!validacion.IsValid)
+                {
+                    throw new ArgumentException($"Password no cumple políticas: {string.Join(", ", validacion.Errors)}");
+                }
+
+                // Actualizar password usuario
+                var usuario = tokenEntity.Usuario;
+                usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(nuevaPassword);
+                usuario.UltimaActualizacionPassword = DateTime.UtcNow;
+                usuario.RequiereCambioPassword = false;
+
+                _usuarioRepository.Actualizar(usuario);
+                
+                // Marcar token como usado
+                await _passwordResetTokenRepository.MarcarComoUsadoAsync(tokenEntity.Id, ct);
+                
+                await _unitOfWork.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                
+                _logger?.LogInformation(SecurityLogEvents.PasswordResetSuccess, "Password restablecida con token para usuario {UserId}", usuario.Id);
+                return true;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
+        }
+
+        public async Task<string> RestablecerPasswordPorAdminAsync(int usuarioId, CancellationToken ct = default)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(usuarioId, ct);
+            if (usuario == null)
+            {
+                throw new KeyNotFoundException($"Usuario {usuarioId} no encontrado");
+            }
+
+            var passwordTemporal = _passwordPolicyService.GenerateTemporaryPassword();
+            // IMPORTANTE: Un admin setea password temporal -> Usuario DEBE cambiarla
+            usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordTemporal);
+            usuario.UltimaActualizacionPassword = DateTime.UtcNow;
+            usuario.RequiereCambioPassword = true; 
+
+            _usuarioRepository.Actualizar(usuario);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger?.LogWarning("Password restablecida para usuario {Id} por administrador", usuarioId);
+            return passwordTemporal;
+        }
+
         /// <summary>
         /// Genera un JWT token con claims de seguridad mejorados.
         /// Mejoras:
@@ -105,13 +252,12 @@ namespace BackendAtlas.Services.Implementations
         /// </summary>
         private string GenerateJwtToken(Usuario usuario)
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured"));
-            var issuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-            var audience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+            var issuer = _jwtSettings.Issuer;
+            var audience = _jwtSettings.Audience;
 
             var now = DateTime.UtcNow;
-            var expirationMinutes = int.TryParse(jwtSettings["ExpirationMinutes"], out var minutes) ? minutes : 60;
+            var expirationMinutes = _jwtSettings.ExpirationMinutes > 0 ? _jwtSettings.ExpirationMinutes : 60;
 
             var claims = new List<Claim>
             {
@@ -161,8 +307,7 @@ namespace BackendAtlas.Services.Implementations
         /// </summary>
         private TokenValidationParameters BuildTokenValidationParameters()
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured"));
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
 
             return new TokenValidationParameters
             {
@@ -170,11 +315,30 @@ namespace BackendAtlas.Services.Implementations
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings["Issuer"],
-                ValidAudience = jwtSettings["Audience"],
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidAudience = _jwtSettings.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ClockSkew = TimeSpan.FromMinutes(5) // Tolerancia de 5 minutos para sincronización de relojes
             };
+        }
+
+        // --- Helpers de Seguridad ---
+
+        private static string GenerateSecureToken()
+        {
+            // Más seguro que Guid.NewGuid()
+            var bytes = new byte[32];
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-").Replace("/", "_").Replace("=", ""); // URL Safe Base64
+        }
+
+        private static string ComputeSha256Hash(string input)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+            return Convert.ToBase64String(bytes);
         }
     }
 }

@@ -11,9 +11,15 @@ namespace BackendAtlas.Services.Interfaces
         Task<LoginResponse?> Login(string email, string password, CancellationToken cancellationToken = default);
         
         // TODO: Implementar para escalabilidad
-        // Task<LoginResponse?> RefreshToken(string refreshToken, CancellationToken cancellationToken = default);
-        // Task RevokeToken(string token, CancellationToken cancellationToken = default);
-        // Task<bool> ValidateToken(string token, CancellationToken cancellationToken = default);
+        // Gestión de Password
+        Task<bool> CambiarPasswordAsync(int usuarioId, string passwordActual, string passwordNueva, CancellationToken ct = default);
+        
+        // Recuperación por Email
+        Task SolicitarRecuperacionPasswordAsync(string email, CancellationToken ct = default);
+        Task<bool> RestablecerPasswordConTokenAsync(string token, string nuevaPassword, CancellationToken ct = default);
+        
+        // Reset Admin
+        Task<string> RestablecerPasswordPorAdminAsync(int usuarioId, CancellationToken ct = default);
     }
 
     /// <summary>

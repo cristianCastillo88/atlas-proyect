@@ -10,12 +10,10 @@ namespace BackendAtlas.Controllers
     public class CategoriasController : ControllerBase
     {
         private readonly ICategoriaService _categoriaService;
-        private readonly Data.AppDbContext _context;
 
-        public CategoriasController(ICategoriaService categoriaService, Data.AppDbContext context)
+        public CategoriasController(ICategoriaService categoriaService)
         {
             _categoriaService = categoriaService;
-            _context = context;
         }
 
         [HttpGet]
@@ -28,10 +26,7 @@ namespace BackendAtlas.Controllers
         [HttpGet("sucursal/{sucursalId}")]
         public async Task<ActionResult<IEnumerable<CategoriaDto>>> GetBySucursal(int sucursalId, CancellationToken cancellationToken = default)
         {
-            var categorias = await _context.Categorias
-                .Where(c => c.SucursalId == sucursalId && c.Activa)
-                .Select(c => new CategoriaDto { Id = c.Id, Nombre = c.Nombre, SucursalId = c.SucursalId })
-                .ToListAsync(cancellationToken);
+            var categorias = await _categoriaService.ObtenerPorSucursalAsync(sucursalId, cancellationToken);
             return Ok(categorias);
         }
 

@@ -1,129 +1,16 @@
 ---
-// Dashboard Principal
-import AuthLayout from '../../layouts/AuthLayout.astro';
+// Dashboard Principal - Redirection Logic
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import AdminDashboard from "../../components/admin/negocios/AdminDashboard";
+import { Toaster } from "../../components/ui/Toaster";
 ---
 
 <AuthLayout title="Dashboard - Atlas">
-  <div class="min-h-screen flex flex-col">
-    <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Atlas Dashboard</h1>
-      <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Cerrar Sesión</button>
-    </header>
-    <main class="flex-1" id="main-content">
-      <!-- El contenido se cargará dinámicamente según el rol -->
-    </main>
+  <div class="min-h-screen">
+    {
+      /* Reusing AdminDashboard as the main entry point which handles roles and redirection */
+    }
+    <AdminDashboard client:only="react" />
   </div>
+  <Toaster client:load />
 </AuthLayout>
-
-<script>
-  // Verificar autenticación en client-side
-  const userData = sessionStorage.getItem('userStore') || localStorage.getItem('userStore');
-  const user = userData ? JSON.parse(userData) : null;
-  
-  console.log('Admin page - user data:', { user, hasData: !!userData });
-  
-  if (!user || !user.token) {
-    console.log('User not authenticated, redirecting to login');
-    window.location.href = '/login';
-  } else {
-    // Detectar rol y cargar vista correspondiente
-    const role = user.role || user.Role;
-    console.log('User role:', role);
-    
-    if (role === 'SuperAdmin') {
-      // Cargar vista de SuperAdmin
-      window.location.href = '/admin/negocios';
-    } else if (role === 'AdminNegocio') {
-      // Cargar vista de AdminNegocio (sus sucursales)
-      loadAdminNegocioView();
-    } else if (role === 'Empleado') {
-      // Empleado debería ir directo a su sucursal
-      const sucursalId = user.sucursalId || user.SucursalId;
-      if (sucursalId) {
-        window.location.href = `/admin/sucursal/${sucursalId}`;
-      } else {
-        console.error('Empleado sin sucursal asignada');
-        window.location.href = '/login';
-      }
-    } else {
-      console.log('Unknown role, redirecting to login');
-      window.location.href = '/login';
-    }
-  }
-
-  async function loadAdminNegocioView() {
-    const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:5044';
-    const mainContent = document.getElementById('main-content');
-    
-    if (!mainContent) return;
-
-    try {
-      // Obtener las sucursales del negocio
-      const token = user.token;
-      const negocioId = user.negocioId || user.NegocioId;
-      
-      const response = await fetch(`${API_URL}/api/sucursales/negocios/${negocioId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Error al cargar sucursales');
-      
-      const sucursales = await response.json();
-      
-      mainContent.innerHTML = `
-        <div class="p-6 space-y-6">
-          <div>
-            <p class="text-sm text-gray-500">Panel de Administración</p>
-            <h1 class="text-3xl font-bold">Mis Sucursales</h1>
-          </div>
-          
-          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${sucursales.map((sucursal: any) => `
-              <a href="/admin/sucursal/${sucursal.id}" class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <h3 class="text-xl font-semibold mb-2">${sucursal.nombre}</h3>
-                <p class="text-gray-600 text-sm mb-1">📍 ${sucursal.direccion}</p>
-                <p class="text-sm ${sucursal.activo ? 'text-green-600' : 'text-red-600'} font-medium">
-                  ${sucursal.activo ? '✓ Activa' : '✗ Inactiva'}
-                </p>
-              </a>
-            `).join('')}
-          </div>
-          
-          ${sucursales.length === 0 ? `
-            <div class="text-center py-12">
-              <p class="text-gray-500">No hay sucursales registradas aún.</p>
-            </div>
-          ` : ''}
-        </div>
-      `;
-    } catch (error) {
-      console.error('Error loading sucursales:', error);
-      mainContent.innerHTML = `
-        <div class="p-6">
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p class="text-red-800">Error al cargar las sucursales. Por favor, intenta nuevamente.</p>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('userStore');
-      localStorage.removeItem('userStore');
-      document.cookie = 'userStore=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-      window.location.href = '/login';
-    });
-  }
-</script>
-
-<style>
-  :global(body) {
-    @apply bg-gray-50;
-  }
-</style>

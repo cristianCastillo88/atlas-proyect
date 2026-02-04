@@ -1,0 +1,28 @@
+---
+import SuperAdminLayout from "../../layouts/SuperAdminLayout.astro";
+import { ChangePasswordPanel } from "../../components/profile/ChangePasswordPanel";
+---
+
+<SuperAdminLayout title="Mi Perfil - Atlas">
+    <div class="max-w-3xl mx-auto mt-8">
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <div class="flex-1 min-w-0">
+                <h2
+                    class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate"
+                >
+                    Mi Perfil
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Administra tu cuenta y seguridad
+                </p>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Sección de Cambio de Contraseña -->
+            <ChangePasswordPanel client:load />
+
+            <!-- Aquí se pueden agregar más secciones de perfil en el futuro -->
+        </div>
+    </div>
+</SuperAdminLayout>

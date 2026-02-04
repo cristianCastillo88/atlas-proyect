@@ -20,5 +20,17 @@ namespace BackendAtlas.Repositories.Implementations
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<TipoEntrega?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.TiposEntrega
+                .FindAsync(new object[] { id }, cancellationToken);
+        }
+
+        public async Task ActualizarAsync(TipoEntrega tipoEntrega, CancellationToken cancellationToken = default)
+        {
+            _context.TiposEntrega.Update(tipoEntrega);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

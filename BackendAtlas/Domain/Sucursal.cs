@@ -9,7 +9,12 @@ namespace BackendAtlas.Domain
         public required string Telefono { get; set; }
         public required string Slug { get; set; }
         public string? Horario { get; set; }
+        public string? UrlInstagram { get; set; }
+        public string? UrlFacebook { get; set; }
         public bool Activo { get; set; } = true;
+
+        // Configuración Específica
+        public decimal PrecioDelivery { get; set; } = 0m;
 
         // Navegaciones
         public Negocio? Negocio { get; set; }

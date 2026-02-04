@@ -1,0 +1,193 @@
+---
+interface Props {
+    title: string;
+    sucursalId?: number;
+}
+
+const { title, sucursalId } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-admin-bg font-admin">
+        <div class="flex h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <aside
+                class="w-[280px] bg-admin-sidebar flex-shrink-0 flex flex-col"
+            >
+                <!-- Logo/Brand -->
+                <div class="p-6 border-b border-white/10">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-admin-primary rounded-lg flex items-center justify-center"
+                        >
+                            <svg
+                                class="w-6 h-6 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                ></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1
+                                id="sucursal-sidebar-title"
+                                class="text-white font-bold text-xl tracking-tight"
+                            >
+                                Sucursal
+                            </h1>
+                            <p class="text-white/60 text-xs">
+                                Panel de Gestión
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 p-4">
+                    <slot name="sidebar-nav" />
+                </nav>
+
+                <!-- User Profile -->
+                <div class="p-4 border-t border-white/10 space-y-4">
+                    <!-- User Info -->
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-admin-primary/20 rounded-lg flex items-center justify-center shadow-sm"
+                        >
+                            <span
+                                class="text-admin-primary font-bold text-sm"
+                                id="user-avatar">EM</span
+                            >
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p
+                                class="text-white text-sm font-medium truncate"
+                                id="user-name"
+                            >
+                                Usuario
+                            </p>
+                            <p
+                                class="text-white/60 text-xs truncate"
+                                id="user-email"
+                            >
+                                email@atlas.com
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <a
+                            href="/admin/profile"
+                            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200 group border border-transparent hover:border-white/10"
+                            title="Configuración"
+                        >
+                            <svg
+                                class="w-4 h-4 text-white/50 group-hover:text-white transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                                ></path>
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="text-xs font-medium">Ajustes</span>
+                        </a>
+
+                        <button
+                            id="logoutBtn"
+                            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all duration-200 border border-transparent hover:border-red-500/20"
+                            title="Cerrar Sesión"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                ></path>
+                            </svg>
+                            <span class="text-xs font-medium">Salir</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 flex flex-col overflow-hidden">
+                <!-- Header -->
+                <header
+                    class="bg-white border-b border-admin-border px-8 py-6 flex items-center justify-between"
+                >
+                    <slot name="header" />
+                </header>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto p-8">
+                    <slot />
+                </div>
+            </main>
+        </div>
+
+        <script>
+            // Load user data from session
+            const userData =
+                sessionStorage.getItem("userStore") ||
+                localStorage.getItem("userStore");
+            if (userData) {
+                const user = JSON.parse(userData);
+                const nameEl = document.getElementById("user-name");
+                const emailEl = document.getElementById("user-email");
+                const avatarEl = document.getElementById("user-avatar");
+
+                if (nameEl && user.name) nameEl.textContent = user.name;
+                if (emailEl && user.email) emailEl.textContent = user.email;
+                if (avatarEl && user.name) {
+                    avatarEl.textContent = user.name
+                        .substring(0, 2)
+                        .toUpperCase();
+                }
+            }
+
+            // Logout handler
+            const logoutBtn = document.getElementById("logoutBtn");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => {
+                    sessionStorage.removeItem("userStore");
+                    localStorage.removeItem("userStore");
+                    window.location.href = "/login";
+                });
+            }
+        </script>
+    </body>
+</html>

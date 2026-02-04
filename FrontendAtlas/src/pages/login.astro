@@ -1,99 +1,169 @@
 ---
-// Página de Login
+// Página de Login con diseño moderno
 import AuthLayout from '../layouts/AuthLayout.astro';
-
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:5000';
 ---
 
 <AuthLayout title="Login - Atlas">
-  <div class="bg-gray-50 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión en Atlas</h2>
-    <form id="loginForm" class="space-y-4">
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-        <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+  <!-- Background con gradiente -->
+  <div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4 relative overflow-hidden">
+    
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] bg-[size:32px_32px]"></div>
+    <div class="absolute top-0 -right-4 w-72 h-72 bg-primary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div class="absolute -bottom-8 -left-4 w-72 h-72 bg-secondary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
+    
+    <!-- Login Card con glassmorphism -->
+    <div class="relative w-full max-w-md">
+      <div class="glass shadow-2xl rounded-2xl p-8 backdrop-blur-xl border border-white/40 animate-fade-in">
+        
+        <!-- Logo y título -->
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg mb-4 mx-auto">
+            <span class="text-white font-bold text-2xl">A</span>
+          </div>
+          <h2 class="text-3xl font-display font-bold text-gray-900 mb-2">Bienvenido</h2>
+          <p class="text-gray-600">Inicia sesión para continuar</p>
+        </div>
+        
+        <!-- Form -->
+        <form id="loginForm" class="space-y-5">
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-semibold text-gray-700">
+              Correo Electrónico
+            </label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              required 
+              class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
+              placeholder="tu@email.com"
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="password" class="block text-sm font-semibold text-gray-700">
+              Contraseña
+            </label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              required 
+              class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
+              placeholder="••••••••"
+            />
+          </div>
+          
+          <div class="flex items-center justify-between text-sm">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+              <span class="text-gray-600">Recordarme</span>
+            </label>
+            <a href="/forgot-password" class="text-primary-600 hover:text-primary-700 font-medium">
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+          
+          <button 
+            type="submit" 
+            id="loginButton"
+            class="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <span id="buttonText">Iniciar Sesión</span>
+            <svg id="buttonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+            <svg id="loadingSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
+        </form>
+        
+        <!-- Divider -->
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-600">
+            ¿No tienes una cuenta? 
+            <a href="/register" class="text-primary-600 hover:text-primary-700 font-semibold ml-1">
+              Regístrate aquí
+            </a>
+          </p>
+        </div>
       </div>
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-        <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-      </div>
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Iniciar Sesión</button>
-    </form>
-    <p id="errorMessage" class="mt-4 text-red-600 text-center hidden"></p>
+    </div>
   </div>
-</div>
+</AuthLayout>
 
-<script define:vars={{ apiUrl }}>
-  const form = document.getElementById('loginForm');
-  const errorMessage = document.getElementById('errorMessage');
+<script>
+  import { login } from '../services/auth';
+  import { toast } from 'sonner';
 
-  form.addEventListener('submit', async (e) => {
+  const form = document.getElementById('loginForm') as HTMLFormElement;
+  const loginButton = document.getElementById('loginButton') as HTMLButtonElement;
+  const buttonText = document.getElementById('buttonText');
+  const buttonIcon = document.getElementById('buttonIcon');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
-    const email = formData.get('email');
-    const password = formData.get('password');
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    // UI de loading
+    loginButton.disabled = true;
+    loginButton.classList.add('opacity-75', 'cursor-not-allowed');
+    if (buttonText) buttonText.textContent = 'Iniciando sesión...';
+    buttonIcon?.classList.add('hidden');
+    loadingSpinner?.classList.remove('hidden');
 
     try {
-      console.log('Attempting login with:', { email, apiUrl });
-      errorMessage.classList.add('hidden');
+      console.log('Attempting login with:', email);
       
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const userData = await login({ email, password });
+      
+      console.log('Login exitoso, datos:', userData);
+      
+      // Toast de éxito
+      toast.success('¡Bienvenido! Redirigiendo...', {
+        duration: 2000,
       });
-
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      if (response.ok) {
-        const data = JSON.parse(responseText);
-        console.log('Login exitoso, datos:', data);
-        
-        // Convertir a camelCase si es necesario
-        const userData = {
-          token: data.token || data.Token || '',
-          role: data.role || data.Role || '',
-          name: data.name || data.Name || '',
-          negocioId: data.negocioId || data.NegocioId || '',
-          sucursalId: data.sucursalId || data.SucursalId || '',
-        };
-        
-        console.log('Saving user data:', userData);
-        
-        // Guardar en sessionStorage para acceso desde scripts inline
-        sessionStorage.setItem('userStore', JSON.stringify(userData));
-        // También guardar en localStorage para persistencia
-        localStorage.setItem('userStore', JSON.stringify(userData));
-        
-        // Redirección inteligente según el rol
-        if (userData.role === 'SuperAdmin') {
-          console.log('Redirecting SuperAdmin to /admin/negocios');
-          window.location.href = '/admin/negocios';
-        } else if (userData.role === 'AdminNegocio') {
-          console.log('Redirecting AdminNegocio to negocios page');
-          window.location.href = '/admin/negocios';
-        } else if (userData.role === 'Empleado') {
-          console.log('Redirecting Empleado to negocios (will auto-redirect to sucursal)');
-          window.location.href = '/admin/negocios';
-        } else {
-          console.log('Redirecting to /admin by default');
-          window.location.href = '/admin';
-        }
+      
+      // Pequeña pausa para que se vea el toast
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirección inteligente según el rol
+      if (userData.role === 'SuperAdmin') {
+        window.location.href = '/admin/negocios';
+      } else if (userData.role === 'AdminNegocio') {
+        window.location.href = '/admin/negocios';
+      } else if (userData.role === 'Empleado') {
+        window.location.href = '/admin/negocios';
       } else {
-        console.error('Error del servidor:', response.status, responseText);
-        errorMessage.textContent = responseText || 'Error al iniciar sesión. Verifica las credenciales.';
-        errorMessage.classList.remove('hidden');
+        window.location.href = '/admin';
       }
     } catch (error) {
-      console.error('Error de conexión:', error);
-      errorMessage.textContent = 'Error de conexión. Asegúrate de que el servidor esté corriendo.';
-      errorMessage.classList.remove('hidden');
+      console.error('Login error:', error);
+      
+      // Toast de error
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión. Verifica tus credenciales.';
+      toast.error(errorMessage, {
+        duration: 4000,
+      });
+      
+      // Restaurar UI
+      loginButton.disabled = false;
+      loginButton.classList.remove('opacity-75', 'cursor-not-allowed');
+      if (buttonText) buttonText.textContent = 'Iniciar Sesión';
+      buttonIcon?.classList.remove('hidden');
+      loadingSpinner?.classList.add('hidden');
     }
   });
 </script>
-</AuthLayout>
+
+<style>
+  .bg-grid-slate-100 {
+    background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='rgba(148,163,184,0.1)' fill-rule='evenodd'/%3E%3C/svg%3E");
+  }
+</style>

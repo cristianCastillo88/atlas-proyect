@@ -11,12 +11,10 @@ namespace BackendAtlas.Controllers
     public class PedidosController : ControllerBase
     {
         private readonly IPedidoService _pedidoService;
-        private readonly BackendAtlas.Data.AppDbContext _context;
 
-        public PedidosController(IPedidoService pedidoService, BackendAtlas.Data.AppDbContext context)
+        public PedidosController(IPedidoService pedidoService)
         {
             _pedidoService = pedidoService;
-            _context = context;
         }
 
         [HttpPost]
@@ -51,68 +49,50 @@ namespace BackendAtlas.Controllers
         public async Task<ActionResult<IEnumerable<PedidoAdminListDto>>> GetPorSucursal(int sucursalId, [FromQuery] string? estado = null, CancellationToken cancellationToken = default)
         {
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            var negocioIdClaim = User.FindFirst("negocioId")?.Value;
+            int.TryParse(negocioIdClaim ?? "0", out var negocioId);
+            int? negocioIdNullable = negocioId == 0 ? null : negocioId;
 
-            if (role == "AdminNegocio")
+            var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
+            int.TryParse(sucursalIdClaim ?? "0", out var usuarioSucursalId);
+            int? usuarioSucursalIdNullable = usuarioSucursalId == 0 ? null : usuarioSucursalId;
+
+            try
             {
-                var negocioIdClaim = User.FindFirst("negocioId")?.Value;
-                if (string.IsNullOrEmpty(negocioIdClaim) || !int.TryParse(negocioIdClaim, out var negocioId))
-                    return Unauthorized("Negocio ID no encontrado.");
-
-                var suc = await _context.Sucursales.FindAsync(sucursalId);
-                if (suc == null || suc.NegocioId != negocioId)
-                    return Unauthorized("No tienes permisos sobre esta sucursal.");
+                var pedidos = await _pedidoService.ObtenerPedidosPorSucursalAsync(sucursalId, estado, negocioIdNullable, role, usuarioSucursalIdNullable, cancellationToken);
+                return Ok(pedidos);
             }
-            else if (role == "Empleado")
+            catch (UnauthorizedAccessException ex)
             {
-                var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                    return Unauthorized("Usuario no identificado.");
-
-                var usuario = await _context.Usuarios.FindAsync(userId);
-                if (usuario?.SucursalId != sucursalId)
-                    return Unauthorized("No tienes permisos sobre esta sucursal.");
+                return Unauthorized(ex.Message);
             }
-
-            var pedidos = await _pedidoService.ObtenerPedidosPorSucursalAsync(sucursalId, estado, cancellationToken);
-            return Ok(pedidos);
         }
 
         [HttpPatch("{id}/estado")]
         [Authorize(Roles = "AdminNegocio,Empleado,SuperAdmin")]
         public async Task<IActionResult> PatchEstado(int id, CambiarEstadoDto request, CancellationToken cancellationToken = default)
         {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            var negocioIdClaim = User.FindFirst("negocioId")?.Value;
+            int.TryParse(negocioIdClaim ?? "0", out var negocioId);
+            int? negocioIdNullable = negocioId == 0 ? null : negocioId;
+
+            var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
+            int.TryParse(sucursalIdClaim ?? "0", out var usuarioSucursalId);
+            int? usuarioSucursalIdNullable = usuarioSucursalId == 0 ? null : usuarioSucursalId;
+
             try
             {
-                // Seguridad: validar que el usuario tenga permisos sobre la sucursal del pedido
-                var pedidoDb = await _context.Pedidos.FindAsync(id);
-                if (pedidoDb == null) return NotFound("Pedido no encontrado.");
-
-                var role = User.FindFirst(ClaimTypes.Role)?.Value;
-                if (role == "AdminNegocio")
-                {
-                    var negocioIdClaim = User.FindFirst("negocioId")?.Value;
-                    if (string.IsNullOrEmpty(negocioIdClaim) || !int.TryParse(negocioIdClaim, out var negocioId))
-                        return Unauthorized("Negocio ID no encontrado.");
-                    var suc = await _context.Sucursales.FindAsync(pedidoDb.SucursalId);
-                    if (suc == null || suc.NegocioId != negocioId)
-                        return Unauthorized("No tienes permisos sobre esta sucursal.");
-                }
-                else if (role == "Empleado")
-                {
-                    var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                        return Unauthorized("Usuario no identificado.");
-                    var usuario = await _context.Usuarios.FindAsync(userId);
-                    if (usuario?.SucursalId != pedidoDb.SucursalId)
-                        return Unauthorized("No tienes permisos sobre esta sucursal.");
-                }
-
-                await _pedidoService.CambiarEstadoPedidoAsync(id, request, cancellationToken);
+                await _pedidoService.CambiarEstadoPedidoAsync(id, request, negocioIdNullable, role, usuarioSucursalIdNullable, cancellationToken);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {

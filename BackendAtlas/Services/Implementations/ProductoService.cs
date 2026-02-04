@@ -1,6 +1,7 @@
 using AutoMapper;
 using BackendAtlas.Domain;
 using BackendAtlas.DTOs;
+using BackendAtlas.DTOs.Common;
 using BackendAtlas.Repositories.Interfaces;
 using BackendAtlas.Services.Interfaces;
 
@@ -47,6 +48,24 @@ namespace BackendAtlas.Services.Implementations
             return _mapper.Map<IEnumerable<ProductoResponseDto>>(productos);
         }
 
+        public async Task<PagedResult<ProductoResponseDto>> ObtenerPorSucursalPaginadoAsync(
+            int sucursalId, 
+            int pageNumber = 1, 
+            int pageSize = 20, 
+            CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _productoRepository.ObtenerCatalogoPorSucursalPaginadoAsync(
+                sucursalId, pageNumber, pageSize, cancellationToken);
+
+            return new PagedResult<ProductoResponseDto>
+            {
+                Items = _mapper.Map<List<ProductoResponseDto>>(items),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
+
         public async Task<ProductoResponseDto> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default)
         {
             // CQS: Repo directo para consulta - Método semántico
@@ -62,10 +81,7 @@ namespace BackendAtlas.Services.Implementations
 
         public async Task<ProductoResponseDto> CrearAsync(ProductoCreateRequestDto request, CancellationToken cancellationToken = default)
         {
-            if (request.Precio <= 0)
-            {
-                throw new ArgumentException("El precio debe ser mayor a 0.");
-            }
+
 
             // Validar categoría (Repo directo para lectura)
             var categoriaExiste = await _unitOfWork.Categorias.ExisteAsync(request.CategoriaId, cancellationToken);
@@ -88,10 +104,7 @@ namespace BackendAtlas.Services.Implementations
 
         public async Task<ProductoResponseDto> ActualizarAsync(ProductoUpdateRequestDto request, CancellationToken cancellationToken = default)
         {
-            if (request.Precio <= 0)
-            {
-                throw new ArgumentException("El precio debe ser mayor a 0.");
-            }
+
 
             var categoriaExiste = await _unitOfWork.Categorias.ExisteAsync(request.CategoriaId, cancellationToken);
             if (!categoriaExiste)

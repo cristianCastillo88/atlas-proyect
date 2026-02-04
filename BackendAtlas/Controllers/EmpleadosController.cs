@@ -12,12 +12,12 @@ namespace BackendAtlas.Controllers
     public class EmpleadosController : ControllerBase
     {
         private readonly ITenantService _tenantService;
-        private readonly BackendAtlas.Data.AppDbContext _context;
+        private readonly ISucursalService _sucursalService;
 
-        public EmpleadosController(ITenantService tenantService, BackendAtlas.Data.AppDbContext context)
+        public EmpleadosController(ITenantService tenantService, ISucursalService sucursalService)
         {
             _tenantService = tenantService;
-            _context = context;
+            _sucursalService = sucursalService;
         }
 
         [HttpPost]
@@ -37,53 +37,23 @@ namespace BackendAtlas.Controllers
         [Authorize(Roles = "AdminNegocio,SuperAdmin,Empleado")]
         public async Task<IActionResult> ListarPorSucursal(int sucursalId, CancellationToken cancellationToken = default)
         {
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+            var negocioIdClaim = User.FindFirst("negocioId")?.Value;
+            int.TryParse(negocioIdClaim ?? "0", out var negocioId);
             
-            // Debug: Log all claims
-            var allClaims = User.Claims.Select(c => $"{c.Type}: {c.Value}");
-            Console.WriteLine("=== CLAIMS DEBUG ===");
-            foreach (var claim in allClaims)
+            var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
+            int.TryParse(sucursalIdClaim ?? "0", out var sucursalIdUsuario);
+            int? sucursalIdNullable = sucursalIdUsuario == 0 ? null : sucursalIdUsuario;
+
+            try 
             {
-                Console.WriteLine(claim);
+                var empleados = await _sucursalService.ObtenerEmpleadosAsync(sucursalId, negocioId, rol, sucursalIdNullable, cancellationToken);
+                return Ok(empleados);
             }
-            Console.WriteLine("====================");
-            
-            if (role == "AdminNegocio")
+            catch (UnauthorizedAccessException ex)
             {
-                var negocioIdClaim = User.FindFirst("negocioId")?.Value;
-                if (string.IsNullOrEmpty(negocioIdClaim) || !int.TryParse(negocioIdClaim, out var negocioId))
-                {
-                    return Unauthorized("Negocio ID no encontrado.");
-                }
-
-                var pertenece = await _context.Sucursales.FindAsync(new object[] { sucursalId }, cancellationToken);
-                if (pertenece == null || pertenece.NegocioId != negocioId)
-                {
-                    return Unauthorized("No tienes permisos sobre esta sucursal.");
-                }
+                return Unauthorized(ex.Message);
             }
-            else if (role == "Empleado")
-            {
-                var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
-                Console.WriteLine($"Empleado SucursalId claim: {sucursalIdClaim}");
-                
-                if (string.IsNullOrEmpty(sucursalIdClaim) || !int.TryParse(sucursalIdClaim, out var empleadoSucursalId))
-                {
-                    return Unauthorized($"Sucursal ID no encontrado en token. Claims disponibles: {string.Join(", ", allClaims)}");
-                }
-
-                if (empleadoSucursalId != sucursalId)
-                {
-                    return Unauthorized("Solo puedes ver empleados de tu sucursal.");
-                }
-            }
-
-            var empleados = _context.Usuarios
-                .Where(u => u.SucursalId == sucursalId && u.Rol == Domain.RolUsuario.Empleado && u.Activo)
-                .Select(u => new { u.Id, u.Nombre, u.Email, u.SucursalId })
-                .ToList();
-
-            return Ok(empleados);
         }
 
         [HttpDelete("{id}")]
@@ -95,31 +65,23 @@ namespace BackendAtlas.Controllers
                 return Unauthorized("Negocio ID no encontrado.");
             }
 
-            var empleado = await _context.Usuarios.FindAsync(new object[] { id }, cancellationToken);
-            if (empleado == null)
+            try 
             {
-                return NotFound("Empleado no encontrado.");
+                await _sucursalService.DarDeBajaEmpleadoAsync(id, negocioId, cancellationToken);
+                return Ok(new { mensaje = "Empleado dado de baja exitosamente" });
             }
-
-            if (empleado.Rol != Domain.RolUsuario.Empleado)
+            catch (KeyNotFoundException ex)
             {
-                return BadRequest("Solo se pueden dar de baja empleados.");
+                return NotFound(ex.Message);
             }
-
-            // Verificar que la sucursal del empleado pertenece al negocio
-            if (empleado.SucursalId.HasValue)
+            catch (UnauthorizedAccessException ex)
             {
-                var sucursal = await _context.Sucursales.FindAsync(new object[] { empleado.SucursalId.Value }, cancellationToken);
-                if (sucursal == null || sucursal.NegocioId != negocioId)
-                {
-                    return Unauthorized("No tienes permisos para dar de baja este empleado.");
-                }
+                return Unauthorized(ex.Message);
             }
-
-            empleado.Activo = false;
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Ok(new { mensaje = "Empleado dado de baja exitosamente" });
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

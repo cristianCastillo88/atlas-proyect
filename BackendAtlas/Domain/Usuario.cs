@@ -11,6 +11,11 @@ namespace BackendAtlas.Domain
         public RolUsuario Rol { get; set; }
         public bool Activo { get; set; } = true;
 
+        // Password Management & Security Audit
+        public DateTime? UltimaActualizacionPassword { get; set; }
+        public bool RequiereCambioPassword { get; set; } = false;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
         // Navegación
         public Negocio? Negocio { get; set; }
         public Sucursal? Sucursal { get; set; }

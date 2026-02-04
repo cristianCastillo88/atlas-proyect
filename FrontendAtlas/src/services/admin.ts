@@ -1,40 +1,5 @@
-import { $userStore } from '../store/auth';
+import { api } from '../lib/api';
 
-const API_URL = import.meta.env.PUBLIC_API_URL;
-
-function getToken(): string | null {
-  const store = $userStore.get();
-  if (store?.token) return store.token;
-  const fromStorage = localStorage.getItem('userStore') || sessionStorage.getItem('userStore');
-  if (fromStorage) {
-    try {
-      const parsed = JSON.parse(fromStorage);
-      return parsed.token ?? null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
-  if (!token) throw new Error('No hay token disponible. Inicia sesión nuevamente.');
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || 'Error en la petición');
-  }
-  if (res.status === 204) return {} as T;
-  return (await res.json()) as T;
-}
 
 export interface TenantDto {
   id: number;
@@ -71,49 +36,115 @@ export interface SucursalDto {
 }
 
 export async function obtenerTodosLosNegocios(): Promise<TenantDto[]> {
-  return request<TenantDto[]>('/api/admin/tenants');
+  const { data } = await api.get<TenantDto[]>('/Admin/tenants');
+  return data;
 }
 
 export async function crearNegocio(payload: CrearNegocioPayload) {
-  return request('/api/admin/tenants/registrar-negocio', {
-    method: 'POST',
-    body: JSON.stringify({
-      nombreNegocio: payload.nombreNegocio,
-      direccionCentral: payload.direccionCentral,
-      telefono: payload.telefono,
-      datosDueno: {
-        nombre: payload.nombreDueno,
-        email: payload.email,
-        password: payload.password,
-      },
-    }),
+  const { data } = await api.post('/Admin/tenants/registrar-negocio', {
+    nombreNegocio: payload.nombreNegocio,
+    direccionCentral: payload.direccionCentral,
+    telefono: payload.telefono,
+    datosDueno: {
+      nombre: payload.nombreDueno,
+      email: payload.email,
+      password: payload.password,
+    },
   });
+  return data;
 }
 
 export async function crearSucursal(payload: CrearSucursalPayload) {
-  return request('/api/sucursales', {
-    method: 'POST',
-    body: JSON.stringify({
-      negocioId: payload.negocioId,
-      nombre: payload.nombre,
-      direccion: payload.direccion,
-      telefono: payload.telefono,
-    }),
+  const { data } = await api.post('/Sucursales', {
+    negocioId: payload.negocioId,
+    nombre: payload.nombre,
+    direccion: payload.direccion,
+    telefono: payload.telefono,
   });
+  return data;
 }
 
 export async function alternarEstadoNegocio(id: number) {
-  return request(`/api/admin/tenants/${id}/toggle-status`, {
-    method: 'PATCH',
-  });
+  const { data } = await api.patch(`/Admin/tenants/${id}/toggle-status`);
+  return data;
 }
 
 export async function obtenerSucursalesPorNegocio(negocioId: number): Promise<SucursalDto[]> {
-  return request<SucursalDto[]>(`/api/sucursales/negocios/${negocioId}`);
+  const { data } = await api.get<SucursalDto[]>(`/Sucursales/negocios/${negocioId}`);
+  return data;
 }
 
 export async function alternarEstadoSucursal(id: number) {
-  return request(`/api/sucursales/${id}/toggle-status`, {
-    method: 'PATCH',
+  const { data } = await api.patch(`/Sucursales/${id}/toggle-status`);
+  return data;
+}
+
+// ============ QR CODE FUNCTIONS ============
+
+/**
+ * Obtiene la URL del endpoint de QR code para preview
+ */
+export function getQRCodeUrl(sucursalId: number, size: number = 20): string {
+  const baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:5000';
+  return `${baseUrl}/api/Sucursales/${sucursalId}/qr?size=${size}`;
+}
+
+/**
+ * Obtiene la URL del endpoint de descarga de QR
+ */
+export function getQRCodeDownloadUrl(sucursalId: number, size: number = 20): string {
+  const baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:5000';
+  return `${baseUrl}/api/Sucursales/${sucursalId}/qr/download?size=${size}`;
+}
+
+/**
+ * Obtiene la URL del endpoint SVG de QR
+ */
+export function getQRCodeSvgUrl(sucursalId: number, size: number = 20): string {
+  const baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:5000';
+  return `${baseUrl}/api/Sucursales/${sucursalId}/qr/svg?size=${size}`;
+}
+
+export async function getQRCodeBlobUrl(sucursalId: number, size: number = 20): Promise<string> {
+  const { data } = await api.get(`/Sucursales/${sucursalId}/qr`, {
+    params: { size },
+    responseType: 'blob'
   });
+  return URL.createObjectURL(data);
+}
+
+/**
+ * Descarga el QR code como archivo PNG
+ * Abre en nueva ventana con autenticación
+ */
+export async function downloadQRCode(sucursalId: number, size: number = 20): Promise<void> {
+  // Usar instancia api para manejar base URL y Auth headers automáticamente
+  const response = await api.get(`/Sucursales/${sucursalId}/qr/download`, {
+    params: { size },
+    responseType: 'blob'
+  });
+
+  // Crear blob y descargar
+  const blob = response.data;
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+
+  // Intentar obtener nombre de archivo del header content-disposition si existe
+  // O generar uno fallback
+  const contentDisposition = response.headers['content-disposition'];
+  let fileName = `QR_Sucursal_${sucursalId}.png`;
+
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+    if (fileNameMatch && fileNameMatch.length === 2) {
+      fileName = fileNameMatch[1];
+    }
+  }
+
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(downloadUrl);
 }

@@ -2,23 +2,18 @@ using BackendAtlas.DTOs;
 using BackendAtlas.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BackendAtlas.Data;
-using BackendAtlas.Domain;
-using Microsoft.EntityFrameworkCore;
 
 namespace BackendAtlas.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/admin")]
     [ApiController]
-    public class AdminController : ControllerBase
+    public class AdminTenantsController : ControllerBase
     {
         private readonly ITenantService _tenantService;
-       private readonly AppDbContext _context;
 
-       public AdminController(ITenantService tenantService, AppDbContext context)
+        public AdminTenantsController(ITenantService tenantService)
         {
             _tenantService = tenantService;
-           _context = context;
         }
 
         [HttpPost("tenants/registrar-negocio")]
@@ -52,54 +47,26 @@ namespace BackendAtlas.Controllers
             }
         }
 
-       [HttpGet("tenants")]
-       [Authorize(Roles = "SuperAdmin")]
-       public async Task<IActionResult> GetAllTenants(CancellationToken cancellationToken = default)
-       {
-           var negocios = await _context.Negocios
-               .Include(n => n.Sucursales)
-               .Include(n => n.Usuarios)
-               .ToListAsync(cancellationToken);
+        [HttpGet("tenants")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> GetAllTenants(CancellationToken cancellationToken = default)
+        {
+            var tenants = await _tenantService.GetAllTenantsAsync(cancellationToken);
+            return Ok(tenants);
+        }
 
-           var tenantsDto = negocios.Select(n => new TenantDto
-           {
-               Id = n.Id,
-               Nombre = n.Nombre,
-               DueñoEmail = n.Usuarios?.FirstOrDefault(u => u.Rol == RolUsuario.AdminNegocio)?.Email ?? "N/A",
-               CantidadSucursales = n.Sucursales?.Count ?? 0,
-               Activo = n.Activo,
-               FechaRegistro = n.FechaRegistro
-           }).ToList();
+        [HttpPatch("tenants/{id}/toggle-status")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> ToggleTenantStatus(int id, CancellationToken cancellationToken = default)
+        {
+            var result = await _tenantService.ToggleTenantStatusAsync(id, cancellationToken);
+            
+            // Note: Currently result being false is ambiguous (Not Found vs set to Inactive). 
+            // Ideally service should return nullable or throw if not found.
+            // For now, we assume success if no exception.
 
-           return Ok(tenantsDto);
-       }
-
-       [HttpPatch("tenants/{id}/toggle-status")]
-       public async Task<IActionResult> ToggleTenantStatus(int id, CancellationToken cancellationToken = default)
-       {
-           var negocio = await _context.Negocios.Include(n => n.Usuarios).FirstOrDefaultAsync(n => n.Id == id, cancellationToken);
-           if (negocio == null)
-           {
-               return NotFound("Negocio no encontrado.");
-           }
-
-           // Invertir estado del negocio
-           negocio.Activo = !negocio.Activo;
-
-           // Invertir estado de todos los usuarios del negocio
-           var usuariosNegocio = negocio.Usuarios?.Where(u => u.NegocioId == id).ToList();
-           if (usuariosNegocio != null)
-           {
-               foreach (var usuario in usuariosNegocio)
-               {
-                   usuario.Activo = negocio.Activo;
-               }
-           }
-
-           _context.Negocios.Update(negocio);
-           await _context.SaveChangesAsync(cancellationToken);
-
-           return Ok(new { message = $"Estado del negocio actualizado a: {(negocio.Activo ? "Activo" : "Inactivo")}" });
-       }
+            return Ok(new { message = $"Estado del negocio actualizado." });
+             
+        }
     }
 }

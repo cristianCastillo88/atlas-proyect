@@ -1,84 +1,299 @@
 ---
 // Landing page
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-  <div class="bg-gray-50 text-gray-900">
-    <!-- Header -->
-    <header class="bg-white shadow-sm">
+  <div
+    class="bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900"
+  >
+    <!-- Header con Glassmorphism -->
+    <header class="sticky top-0 z-50 glass shadow-glass-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-4">
-          <div class="text-2xl font-bold text-blue-600">Atlas</div>
-          <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Ingresar</a>
+          <div class="flex items-center gap-2">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg"
+            >
+              <span class="text-white font-bold text-xl">A</span>
+            </div>
+            <span
+              class="text-2xl font-display font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent"
+              >Atlas</span
+            >
+          </div>
+          <a
+            href="/login"
+            class="bg-primary-600 text-white px-6 py-2.5 rounded-lg hover:bg-primary-700 transition-all hover:shadow-lg hover:scale-105 font-medium"
+          >
+            Ingresar
+          </a>
         </div>
       </div>
     </header>
 
-  <!-- Hero Section -->
-  <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h1 class="text-4xl md:text-6xl font-bold mb-4">Gestiona tu gastronomía con Atlas</h1>
-      <p class="text-xl md:text-2xl mb-8">La solución completa para restaurantes modernos: pedidos eficientes, multi-sucursal y carta digital QR.</p>
-      <a href="/register" class="bg-white text-blue-600 px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition">Comenzar Ahora</a>
-    </div>
-  </section>
+    <!-- Hero Section con gradiente moderno -->
+    <section
+      class="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 text-white py-24 sm:py-32"
+    >
+      <!-- Decorative background -->
+      <div class="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]">
+      </div>
+      <div class="absolute inset-0 bg-gradient-to-t from-primary-900/20"></div>
 
-  <!-- Features Section -->
-  <section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl font-bold text-center mb-12">Características Principales</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Gestión de Pedidos -->
-        <div class="text-center">
-          <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="animate-fade-in">
+          <h1
+            class="text-5xl md:text-7xl font-display font-bold mb-6 leading-tight"
+          >
+            Gestiona tu local comercial <br />
+            <span
+              class="bg-gradient-to-r from-white to-primary-100 bg-clip-text text-transparent"
+              >con Atlas</span
+            >
+          </h1>
+          <p
+            class="text-xl md:text-2xl mb-10 text-primary-50 max-w-3xl mx-auto leading-relaxed"
+          >
+            La solución completa para tu negocio: pedidos eficientes,
+            multi-sucursal y carta digital QR.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/register"
+              class="inline-flex items-center justify-center bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl hover:scale-105 text-lg"
+            >
+              Comenzar Ahora
+              <svg
+                class="w-5 h-5 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </a>
+            <a
+              href="#features"
+              class="inline-flex items-center justify-center border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-all backdrop-blur-sm text-lg"
+            >
+              Ver Características
+            </a>
           </div>
-          <h3 class="text-xl font-semibold mb-2">Gestión de Pedidos</h3>
-          <p class="text-gray-600">Administra pedidos en tiempo real, desde recepción hasta entrega, con notificaciones automáticas.</p>
-        </div>
-        <!-- Multi-Sucursal -->
-        <div class="text-center">
-          <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold mb-2">Multi-Sucursal</h3>
-          <p class="text-gray-600">Controla múltiples sucursales desde un solo panel, sincronizando inventarios y operaciones.</p>
-        </div>
-        <!-- Carta QR Digital -->
-        <div class="text-center">
-          <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 15h4.01M12 21h4.01M12 18h4.01M6 12h4.01M6 15h4.01M6 21h4.01M6 18h4.01M2 12h4.01M2 15h4.01M2 21h4.01M2 18h4.01"></path>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold mb-2">Carta QR Digital</h3>
-          <p class="text-gray-600">Ofrece una carta digital interactiva accesible vía QR, actualizable en tiempo real.</p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="text-lg font-semibold mb-4 md:mb-0">Atlas</div>
-        <div class="flex space-x-6">
-          <a href="/about" class="hover:text-gray-300">Sobre Nosotros</a>
-          <a href="/contact" class="hover:text-gray-300">Contacto</a>
-          <a href="/privacy" class="hover:text-gray-300">Política de Privacidad</a>
-          <a href="/terms" class="hover:text-gray-300">Términos de Servicio</a>
+    <!-- Features Section con cards glassmorphism -->
+    <section id="features" class="py-24 bg-gradient-to-b from-white to-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 animate-slide-up">
+          <h2
+            class="text-4xl md:text-5xl font-display font-bold mb-4 text-gray-900"
+          >
+            Características Principales
+          </h2>
+          <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+            Todo lo que necesitas para llevar tu negocio al siguiente nivel
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Gestión de Pedidos -->
+          <div
+            class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border border-gray-100 hover:scale-105 hover:-translate-y-1 duration-300"
+          >
+            <div
+              class="bg-gradient-to-br from-primary-500 to-primary-600 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-display font-bold mb-3 text-gray-900">
+              Gestión de Pedidos
+            </h3>
+            <p class="text-gray-600 leading-relaxed">
+              Administra pedidos en tiempo real, desde recepción hasta entrega,
+              con notificaciones automáticas.
+            </p>
+          </div>
+
+          <!-- Multi-Sucursal -->
+          <div
+            class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border border-gray-100 hover:scale-105 hover:-translate-y-1 duration-300"
+          >
+            <div
+              class="bg-gradient-to-br from-secondary-500 to-secondary-600 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-display font-bold mb-3 text-gray-900">
+              Multi-Sucursal
+            </h3>
+            <p class="text-gray-600 leading-relaxed">
+              Controla múltiples sucursales desde un solo panel, sincronizando
+              inventarios y operaciones.
+            </p>
+          </div>
+
+          <!-- Carta QR Digital -->
+          <div
+            class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border border-gray-100 hover:scale-105 hover:-translate-y-1 duration-300"
+          >
+            <div
+              class="bg-gradient-to-br from-accent-500 to-accent-600 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 15h4.01M12 21h4.01M12 18h4.01M6 12h4.01M6 15h4.01M6 21h4.01M6 18h4.01M2 12h4.01M2 15h4.01M2 21h4.01M2 18h4.01"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-display font-bold mb-3 text-gray-900">
+              Carta QR Digital
+            </h3>
+            <p class="text-gray-600 leading-relaxed">
+              Ofrece una carta digital interactiva accesible vía QR,
+              actualizable en tiempo real.
+            </p>
+          </div>
         </div>
       </div>
-      <div class="mt-4 text-center text-gray-400">
-        © 2025 Atlas. Todos los derechos reservados.
+    </section>
+
+    <!-- CTA Section -->
+    <section
+      class="py-20 bg-gradient-to-r from-primary-600 to-primary-700 relative overflow-hidden"
+    >
+      <div class="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]">
       </div>
-    </div>
-  </footer>
-</div>
+      <div class="relative max-w-4xl mx-auto text-center px-4">
+        <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6">
+          ¿Listo para transformar tu negocio?
+        </h2>
+        <p class="text-xl text-primary-100 mb-8">
+          Únete a los que ya confían en Atlas
+        </p>
+        <a
+          href="/register"
+          class="inline-flex items-center bg-white text-primary-600 px-10 py-4 rounded-lg font-bold hover:bg-primary-50 transition-all shadow-2xl hover:scale-105 text-lg"
+        >
+          Comienza Gratis
+          <svg
+            class="w-5 h-5 ml-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary-900 text-white py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div class="col-span-1 md:col-span-2">
+            <div class="flex items-center gap-2 mb-4">
+              <div
+                class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center"
+              >
+                <span class="text-white font-bold text-xl">A</span>
+              </div>
+              <span class="text-2xl font-display font-bold">Atlas</span>
+            </div>
+            <p class="text-gray-400 max-w-md">
+              La solución completa para gestionar tu negocio de forma moderna y
+              eficiente.
+            </p>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Enlaces</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li>
+                <a href="/about" class="hover:text-primary-400 transition"
+                  >Sobre Nosotros</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="hover:text-primary-400 transition"
+                  >Contacto</a
+                >
+              </li>
+              <li>
+                <a href="/pricing" class="hover:text-primary-400 transition"
+                  >Precios</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Legal</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li>
+                <a href="/privacy" class="hover:text-primary-400 transition"
+                  >Privacidad</a
+                >
+              </li>
+              <li>
+                <a href="/terms" class="hover:text-primary-400 transition"
+                  >Términos</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+          <p>© 2026 Atlas. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
 </Layout>
+
+<style>
+  .bg-grid-white\/\[0\.05\] {
+    background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='rgba(255,255,255,0.05)' fill-rule='evenodd'/%3E%3C/svg%3E");
+  }
+</style>

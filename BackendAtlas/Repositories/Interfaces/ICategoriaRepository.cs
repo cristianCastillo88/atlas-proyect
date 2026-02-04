@@ -9,6 +9,7 @@ namespace BackendAtlas.Repositories.Interfaces
     {
         // ============ QUERIES ============
         Task<IEnumerable<Categoria>> ObtenerCategoriasActivasAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<Categoria>> ObtenerCategoriasPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default);
         Task<bool> ExisteAsync(int id, CancellationToken cancellationToken = default);
         
         // ============ COMMANDS ============

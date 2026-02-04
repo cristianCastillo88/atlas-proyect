@@ -43,7 +43,11 @@ namespace BackendAtlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SucursalId");
+                    b.HasIndex("SucursalId")
+                        .HasDatabaseName("IX_Categorias_SucursalId");
+
+                    b.HasIndex("SucursalId", "Activa")
+                        .HasDatabaseName("IX_Categorias_SucursalId_Activa");
 
                     b.ToTable("Categorias");
                 });
@@ -55,6 +59,9 @@ namespace BackendAtlas.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Aclaraciones")
+                        .HasColumnType("longtext");
 
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
@@ -70,9 +77,11 @@ namespace BackendAtlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PedidoId");
+                    b.HasIndex("PedidoId")
+                        .HasDatabaseName("IX_DetallesPedido_PedidoId");
 
-                    b.HasIndex("ProductoId");
+                    b.HasIndex("ProductoId")
+                        .HasDatabaseName("IX_DetallesPedido_ProductoId");
 
                     b.ToTable("DetallesPedido");
                 });
@@ -217,6 +226,10 @@ namespace BackendAtlas.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Negocios_Slug");
+
                     b.ToTable("Negocios");
 
                     b.HasData(
@@ -224,10 +237,53 @@ namespace BackendAtlas.Migrations
                         {
                             Id = 1,
                             Activo = true,
-                            FechaRegistro = new DateTime(2025, 12, 29, 15, 48, 7, 194, DateTimeKind.Local).AddTicks(361),
+                            FechaRegistro = new DateTime(2026, 2, 3, 14, 59, 52, 498, DateTimeKind.Local).AddTicks(701),
                             Nombre = "Pizzeria Don Pepe",
                             Slug = "pizzeria-don-pepe"
                         });
+                });
+
+            modelBuilder.Entity("BackendAtlas.Domain.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("FechaExpiracion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaUso")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)");
+
+                    b.Property<bool>("Usado")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FechaExpiracion")
+                        .HasDatabaseName("IX_PasswordResetTokens_FechaExpiracion");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PasswordResetTokens_Token");
+
+                    b.HasIndex("UsuarioId", "Usado")
+                        .HasDatabaseName("IX_PasswordResetTokens_Usuario_Usado");
+
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("BackendAtlas.Domain.Pedido", b =>
@@ -276,13 +332,21 @@ namespace BackendAtlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EstadoPedidoId");
+                    b.HasIndex("EstadoPedidoId")
+                        .HasDatabaseName("IX_Pedidos_EstadoPedidoId");
+
+                    b.HasIndex("FechaCreacion")
+                        .HasDatabaseName("IX_Pedidos_FechaCreacion");
 
                     b.HasIndex("MetodoPagoId");
 
-                    b.HasIndex("SucursalId");
+                    b.HasIndex("SucursalId")
+                        .HasDatabaseName("IX_Pedidos_SucursalId");
 
                     b.HasIndex("TipoEntregaId");
+
+                    b.HasIndex("SucursalId", "EstadoPedidoId", "FechaCreacion")
+                        .HasDatabaseName("IX_Pedidos_SucursalId_EstadoPedidoId_FechaCreacion");
 
                     b.ToTable("Pedidos");
                 });
@@ -326,9 +390,14 @@ namespace BackendAtlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoriaId");
+                    b.HasIndex("CategoriaId")
+                        .HasDatabaseName("IX_Productos_CategoriaId");
 
-                    b.HasIndex("SucursalId");
+                    b.HasIndex("SucursalId")
+                        .HasDatabaseName("IX_Productos_SucursalId");
+
+                    b.HasIndex("SucursalId", "Activo")
+                        .HasDatabaseName("IX_Productos_SucursalId_Activo");
 
                     b.ToTable("Productos");
                 });
@@ -390,6 +459,9 @@ namespace BackendAtlas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<decimal>("PrecioDelivery")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -400,9 +472,23 @@ namespace BackendAtlas.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("UrlFacebook")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UrlInstagram")
+                        .HasColumnType("longtext");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("NegocioId");
+                    b.HasIndex("NegocioId")
+                        .HasDatabaseName("IX_Sucursales_NegocioId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Sucursales_Slug");
+
+                    b.HasIndex("NegocioId", "Activo")
+                        .HasDatabaseName("IX_Sucursales_NegocioId_Activo");
 
                     b.ToTable("Sucursales");
 
@@ -414,6 +500,7 @@ namespace BackendAtlas.Migrations
                             Direccion = "Calle Principal 123",
                             NegocioId = 1,
                             Nombre = "Centro",
+                            PrecioDelivery = 0m,
                             Slug = "pizzeria-don-pepe-centro",
                             Telefono = "123456789"
                         });
@@ -470,6 +557,9 @@ namespace BackendAtlas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int?>("NegocioId")
                         .HasColumnType("int");
 
@@ -482,6 +572,9 @@ namespace BackendAtlas.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("RequiereCambioPassword")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("Rol")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -489,11 +582,20 @@ namespace BackendAtlas.Migrations
                     b.Property<int?>("SucursalId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("UltimaActualizacionPassword")
+                        .HasColumnType("datetime(6)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("NegocioId");
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Usuarios_Email");
 
-                    b.HasIndex("SucursalId");
+                    b.HasIndex("NegocioId")
+                        .HasDatabaseName("IX_Usuarios_NegocioId");
+
+                    b.HasIndex("SucursalId")
+                        .HasDatabaseName("IX_Usuarios_SucursalId");
 
                     b.ToTable("Usuarios");
 
@@ -503,8 +605,10 @@ namespace BackendAtlas.Migrations
                             Id = 1,
                             Activo = true,
                             Email = "admin@sistema.com",
+                            FechaCreacion = new DateTime(2026, 2, 3, 17, 59, 52, 498, DateTimeKind.Utc).AddTicks(876),
                             Nombre = "Super Admin",
                             PasswordHash = "$2a$11$TNMi61YITP34tpj5/fBNg.FNeAa9YuL.3LpV89ac9DhmDlT6vbAkO",
+                            RequiereCambioPassword = false,
                             Rol = "SuperAdmin"
                         });
                 });
@@ -537,6 +641,17 @@ namespace BackendAtlas.Migrations
                     b.Navigation("Pedido");
 
                     b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("BackendAtlas.Domain.PasswordResetToken", b =>
+                {
+                    b.HasOne("BackendAtlas.Domain.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("BackendAtlas.Domain.Pedido", b =>

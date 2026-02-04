@@ -1,4 +1,5 @@
 ---
+import Layout from '../layouts/Layout.astro';
 import { getNegocioPublico } from '../services/public';
 
 export const prerender = false;
@@ -19,86 +20,164 @@ try {
   console.error(`Negocio no encontrado: ${negocioSlug}`, error);
   return Astro.redirect('/404');
 }
+// Helper to check if open
+const isSucursalOpen = (horario: string | undefined) => {
+    if (!horario) return { isOpen: false, statusLabel: "Ver Local" };
+    
+    try {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentTime = currentHour * 60 + currentMinutes;
+
+        const times = horario.match(/(\d{1,2}):(\d{2})/g);
+        if (times && times.length >= 2) {
+                const startStr = times[0];
+                const endStr = times[1];
+                const [startH = 0, startM = 0] = startStr.split(':').map(Number);
+                // endStr is guaranteed to exist because of the length check
+                const [endH = 0, endM = 0] = endStr!.split(':').map(Number);
+            const startTime = startH * 60 + startM;
+            const endTime = endH * 60 + endM;
+            
+            let open = false;
+            // Handle valid schedule
+            if (endTime < startTime) { // Crosses midnight
+                open = currentTime >= startTime || currentTime <= endTime;
+            } else {
+                open = currentTime >= startTime && currentTime <= endTime;
+            }
+            return { isOpen: open, statusLabel: open ? "Abierto" : "Cerrado" };
+        }
+    } catch (e) {
+        console.error("Error parsing schedule", e);
+    }
+    return { isOpen: false, statusLabel: "Ver Local" };
+};
 ---
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{negocioData.nombre} - Seleccionar Sucursal</title>
-  <meta name="description" content={`Selecciona una sucursal de ${negocioData.nombre}`}>
-</head>
-<body class="bg-gray-50">
-  
-  <!-- Hero Section -->
-  <header class="bg-gradient-to-r from-green-600 to-green-700 text-white">
-    <div class="container mx-auto px-4 py-12 text-center">
-      {negocioData.urlLogo && (
-        <img 
-          src={negocioData.urlLogo} 
-          alt={negocioData.nombre}
-          class="h-24 mx-auto mb-4 object-contain"
-        />
-      )}
-      <h1 class="text-4xl md:text-5xl font-bold mb-3">{negocioData.nombre}</h1>
-      <p class="text-lg md:text-xl opacity-90">
-        Selecciona tu sucursal más cercana
-      </p>
-    </div>
-  </header>
-
-  <!-- Lista de Sucursales -->
-  <main class="container mx-auto px-4 py-12">
-    {negocioData.sucursales.length === 0 ? (
-      <div class="text-center py-12">
-        <p class="text-xl text-gray-500">No hay sucursales disponibles en este momento.</p>
-      </div>
-    ) : (
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {negocioData.sucursales.map(sucursal => (
-          <a 
-            href={`/${negocioData.slug}/${sucursal.slug.replace(`${negocioData.slug}-`, '')}`}
-            class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border-2 border-transparent hover:border-green-600"
-          >
-            <div class="flex flex-col h-full">
-              <h2 class="text-2xl font-bold text-gray-800 mb-3">{sucursal.nombre}</h2>
-              
-              <div class="flex items-start gap-2 mb-3 text-gray-600">
-                <svg class="w-5 h-5 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
-                </svg>
-                <span class="flex-1">{sucursal.direccion}</span>
-              </div>
-              
-              <div class="flex items-center gap-2 mb-4 text-gray-600">
-                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
-                </svg>
-                <span>{sucursal.telefono}</span>
-              </div>
-              
-              <div class="mt-auto">
-                <span class="inline-flex items-center gap-2 text-green-600 font-semibold">
-                  Ver Menú
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </span>
-              </div>
+<Layout>
+  <div class="min-h-screen bg-slate-900 text-white font-sans selection:bg-primary-500 selection:text-white">
+    
+    <!-- Hero Section con efecto de fondo -->
+    <header class="relative overflow-hidden pt-20 pb-24 md:pt-32 md:pb-32">
+        <!-- Background Blur Effect -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-primary-600/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
+        
+        <div class="container mx-auto px-4 text-center relative z-10 animate-fade-in">
+          {negocioData.urlLogo ? (
+            <img 
+              src={negocioData.urlLogo} 
+              alt={negocioData.nombre}
+              class="h-24 md:h-32 mx-auto mb-6 object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div class="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary-500/20">
+                <span class="text-4xl md:text-5xl font-bold font-display">{negocioData.nombre.charAt(0)}</span>
             </div>
-          </a>
-        ))}
+          )}
+          
+          <h1 class="text-4xl md:text-6xl font-display font-bold mb-4 bg-gradient-to-r from-white via-primary-100 to-primary-200 bg-clip-text text-transparent">
+            {negocioData.nombre}
+          </h1>
+          <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-light">
+            Selecciona tu sucursal más cercana para ver nuestro menú y realizar tu pedido
+          </p>
+        </div>
+    </header>
+
+    <!-- Lista de Sucursales -->
+    <main class="container mx-auto px-4 pb-20 relative z-10">
+      {negocioData.sucursales.length === 0 ? (
+        <div class="text-center py-20 bg-slate-800/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm max-w-2xl mx-auto">
+          <div class="mb-4 text-slate-600">
+            <svg class="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <p class="text-xl text-slate-400 font-medium">No hay sucursales disponibles en este momento.</p>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
+          {negocioData.sucursales.map(sucursal => {
+            const { isOpen, statusLabel } = isSucursalOpen(sucursal.horario);
+            return (
+            <a 
+              href={`/${negocioData.slug}/${sucursal.slug.replace(`${negocioData.slug}-`, '')}`}
+              class="group relative bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-primary-500/50 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1 overflow-hidden"
+            >
+              <!-- Hover Gradient Background -->
+              <div class="absolute inset-0 bg-gradient-to-br from-primary-600/0 via-primary-600/0 to-primary-600/5 group-hover:to-primary-600/10 transition-all duration-500"></div>
+
+              <div class="relative z-10 flex flex-col h-full">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center text-primary-400 group-hover:bg-primary-500 group-hover:text-white transition-colors duration-300">
+                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    {isOpen ? (
+                        <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider rounded-full border border-green-500/20">Abierto</span>
+                    ) : (
+                         <span class={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border ${statusLabel === 'Cerrado' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-700 text-slate-400 border-slate-600'}`}>{statusLabel}</span>
+                    )}
+                </div>
+
+                <h2 class="text-2xl font-display font-bold text-white mb-3 group-hover:text-primary-400 transition-colors">{sucursal.nombre}</h2>
+                
+                <div class="space-y-3 mb-6 flex-1">
+                    <div class="flex items-start gap-3 text-slate-400 group-hover:text-slate-300 transition-colors">
+                        <svg class="w-5 h-5 mt-0.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span class="text-sm leading-relaxed">{sucursal.direccion}</span>
+                    </div>
+                    
+                    {sucursal.telefono && (
+                        <div class="flex items-center gap-3 text-slate-400 group-hover:text-slate-300 transition-colors">
+                            <svg class="w-5 h-5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span class="text-sm">{sucursal.telefono}</span>
+                        </div>
+                    )}
+                </div>
+                
+                <div class="pt-4 border-t border-slate-700/50 mt-auto">
+                  <span class="w-full flex items-center justify-center gap-2 bg-slate-700 group-hover:bg-primary-600 text-white font-semibold py-3 rounded-xl transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary-600/25">
+                    Ver Carta Digital
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </a>
+          );
+          })}
+        </div>
+      )}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-900/50 py-8 relative z-10">
+      <div class="container mx-auto px-4 text-center">
+        <p class="text-slate-500 text-sm">© {new Date().getFullYear()} {negocioData.nombre}. Potenciado por <a href="https://atlas.com" class="text-primary-500 hover:text-primary-400 font-semibold" target="_blank">Atlas</a>.</p>
       </div>
-    )}
-  </main>
+    </footer>
+  </div>
+</Layout>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-6 mt-12">
-    <div class="container mx-auto px-4 text-center">
-      <p class="text-gray-400">© 2025 {negocioData.nombre}. Todos los derechos reservados.</p>
-    </div>
-  </footer>
-
-</body>
-</html>
+<style>
+  /* Custom animations if needed specifically for this page */
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

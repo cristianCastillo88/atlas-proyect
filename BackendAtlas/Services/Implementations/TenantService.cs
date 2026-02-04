@@ -1,6 +1,7 @@
 using BackendAtlas.Data;
 using BackendAtlas.Domain;
 using BackendAtlas.DTOs;
+using BackendAtlas.Repositories.Interfaces;
 using BackendAtlas.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +10,12 @@ namespace BackendAtlas.Services.Implementations
     public class TenantService : ITenantService
     {
         private readonly AppDbContext _context;
+        private readonly INegocioRepository _negocioRepository;
 
-        public TenantService(AppDbContext context)
+        public TenantService(AppDbContext context, INegocioRepository negocioRepository)
         {
             _context = context;
+            _negocioRepository = negocioRepository;
         }
 
         public async Task RegistrarNuevoInquilinoAsync(CrearNegocioDto dto, CancellationToken cancellationToken = default)
@@ -57,7 +60,10 @@ namespace BackendAtlas.Services.Implementations
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.DatosDueno.Password),
                     Nombre = dto.DatosDueno.Nombre,
                     NegocioId = negocio.Id,
-                    Rol = RolUsuario.AdminNegocio
+                    Rol = RolUsuario.AdminNegocio,
+                    Activo = true, // ACTIVAR INMEDIATAMENTE
+                    FechaCreacion = DateTime.UtcNow,
+                    RequiereCambioPassword = false
                 };
                 _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -115,10 +121,55 @@ namespace BackendAtlas.Services.Implementations
                 Nombre = dto.Nombre,
                 NegocioId = negocioIdDelAdmin,
                 SucursalId = dto.SucursalId,
-                Rol = RolUsuario.Empleado
+                Rol = RolUsuario.Empleado,
+                Activo = true, // ACTIVAR INMEDIATAMENTE
+                FechaCreacion = DateTime.UtcNow,
+                RequiereCambioPassword = false
             };
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync(cancellationToken);
+        }
+
+
+        public async Task<List<TenantDto>> GetAllTenantsAsync(CancellationToken cancellationToken = default)
+        {
+            var negocios = await _negocioRepository.GetAllWithDetailsAsync(cancellationToken);
+
+            return negocios.Select(n => new TenantDto
+            {
+                Id = n.Id,
+                Nombre = n.Nombre,
+                DueñoEmail = n.Usuarios?.FirstOrDefault(u => u.Rol == RolUsuario.AdminNegocio)?.Email ?? "N/A",
+                CantidadSucursales = n.Sucursales?.Count ?? 0,
+                Activo = n.Activo,
+                FechaRegistro = n.FechaRegistro
+            }).ToList();
+        }
+
+        public async Task<bool> ToggleTenantStatusAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var negocio = await _negocioRepository.GetByIdWithUsersAsync(id, cancellationToken);
+            if (negocio == null) return false;
+
+            // Invertir estado del negocio
+            negocio.Activo = !negocio.Activo;
+
+            // Invertir estado de todos los usuarios del negocio
+            var usuariosNegocio = negocio.Usuarios?.Where(u => u.NegocioId == id).ToList();
+            if (usuariosNegocio != null)
+            {
+                foreach (var usuario in usuariosNegocio)
+                {
+                    usuario.Activo = negocio.Activo;
+                }
+            }
+            
+            // Assuming _context tracks this since we got it via repository using the same context instance implicitly?
+            // Actually Repos use same context if scoped.
+            _context.Negocios.Update(negocio);
+            await _context.SaveChangesAsync(cancellationToken);
+            
+            return negocio.Activo;
         }
     }
 }

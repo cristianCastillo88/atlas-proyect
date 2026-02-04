@@ -44,16 +44,11 @@ namespace BackendAtlas.Services.Implementations
             return _mapper.Map<IEnumerable<CategoriaDto>>(categorias);
         }
 
-        public async Task<CategoriaDto> ObtenerPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<CategoriaDto>> ObtenerPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default)
         {
             // CQS: Repo directo - Método semántico
-            var categorias = await _categoriaRepository.ObtenerCategoriasActivasAsync(cancellationToken);
-            var categoria = categorias.FirstOrDefault(c => c.SucursalId == sucursalId);
-            if (categoria == null)
-            {
-                throw new KeyNotFoundException($"No se encontraron categorías para la sucursal {sucursalId}");
-            }
-            return _mapper.Map<CategoriaDto>(categoria);
+            var categorias = await _categoriaRepository.ObtenerCategoriasPorSucursalAsync(sucursalId, cancellationToken);
+            return _mapper.Map<IEnumerable<CategoriaDto>>(categorias);
         }
 
         // ============ COMMANDS (ESCRITURAS - UnitOfWork) ============

@@ -31,11 +31,25 @@ namespace BackendAtlas.Repositories.Implementations
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), cancellationToken);
         }
 
+        public async Task<IEnumerable<Usuario>> ObtenerEmpleadosPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Usuarios
+                .AsNoTracking()
+                .Where(u => u.SucursalId == sucursalId && u.Rol == Domain.RolUsuario.Empleado && u.Activo)
+                .OrderBy(u => u.Nombre)
+                .ToListAsync(cancellationToken);
+        }
+
         // ============ COMMANDS ============
 
         public async Task AgregarAsync(Usuario usuario, CancellationToken cancellationToken = default)
         {
             await _context.Usuarios.AddAsync(usuario, cancellationToken);
+        }
+
+        public void Actualizar(Usuario usuario)
+        {
+            _context.Usuarios.Update(usuario);
         }
     }
 }

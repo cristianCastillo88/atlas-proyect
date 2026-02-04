@@ -16,5 +16,6 @@ namespace BackendAtlas.DTOs
         public required string Direccion { get; set; }
         public required string Telefono { get; set; }
         public required string Slug { get; set; }
+        public string? Horario { get; set; }
     }
 }

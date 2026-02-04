@@ -28,6 +28,15 @@ namespace BackendAtlas.Repositories.Implementations
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<IEnumerable<Categoria>> ObtenerCategoriasPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Categorias
+                .AsNoTracking()
+                .Where(c => c.SucursalId == sucursalId && c.Activa)
+                .OrderBy(c => c.Nombre)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<bool> ExisteAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _context.Categorias

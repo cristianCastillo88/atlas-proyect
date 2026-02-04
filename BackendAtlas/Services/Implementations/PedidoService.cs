@@ -4,6 +4,10 @@ using BackendAtlas.DTOs;
 using BackendAtlas.Repositories.Interfaces;
 using BackendAtlas.Services.Interfaces;
 
+using Microsoft.AspNetCore.SignalR;
+using BackendAtlas.Hubs;
+using BackendAtlas.Extensions;
+
 namespace BackendAtlas.Services.Implementations
 {
     /// <summary>
@@ -15,20 +19,26 @@ namespace BackendAtlas.Services.Implementations
     {
         // CQS: Repo directo para LECTURAS
         private readonly IPedidoRepository _pedidoRepository;
+        private readonly ISucursalRepository _sucursalRepository;
         
         // CQS: UnitOfWork para ESCRITURAS transaccionales
         private readonly IUnitOfWork _unitOfWork;
         
         private readonly IMapper _mapper;
+        private readonly IHubContext<PedidosHub> _hubContext;
 
         public PedidoService(
             IPedidoRepository pedidoRepository,
+            ISucursalRepository sucursalRepository,
             IUnitOfWork unitOfWork,
-            IMapper mapper)
+            IMapper mapper,
+            IHubContext<PedidosHub> hubContext)
         {
             _pedidoRepository = pedidoRepository;
+            _sucursalRepository = sucursalRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _hubContext = hubContext;
         }
 
         // ============ COMMAND: Generar Pedido (ESCRITURA Transaccional) ============
@@ -40,15 +50,18 @@ namespace BackendAtlas.Services.Implementations
             
             try
             {
+                // SANITIZACIÓN: Limpiar inputs del usuario antes de guardar en BD
                 var pedido = new Pedido
                 {
-                    NombreCliente = dto.NombreCliente,
-                    DireccionCliente = string.IsNullOrWhiteSpace(dto.DireccionCliente) ? null : dto.DireccionCliente,
-                    TelefonoCliente = dto.TelefonoCliente,
+                    NombreCliente = dto.NombreCliente.SanitizeHtml()?.NormalizeWhitespace() ?? dto.NombreCliente,
+                    DireccionCliente = string.IsNullOrWhiteSpace(dto.DireccionCliente) 
+                        ? null 
+                        : dto.DireccionCliente.SanitizeHtml()?.NormalizeWhitespace(),
+                    TelefonoCliente = dto.TelefonoCliente.Trim(),
                     MetodoPagoId = dto.MetodoPagoId,
                     TipoEntregaId = dto.TipoEntregaId,
                     SucursalId = dto.SucursalId,
-                    Observaciones = dto.Observaciones,
+                    Observaciones = dto.Observaciones.SanitizeHtml()?.NormalizeWhitespace(),
                     FechaCreacion = DateTime.Now,
                     EstadoPedidoId = 1,
                     Total = 0
@@ -77,11 +90,23 @@ namespace BackendAtlas.Services.Implementations
                     {
                         ProductoId = item.ProductoId,
                         Cantidad = item.Cantidad,
-                        PrecioUnitario = producto.Precio
+                        PrecioUnitario = producto.Precio,
+                        Aclaraciones = item.Aclaraciones.SanitizeHtml()?.NormalizeWhitespace()
                     };
 
                     pedido.Total += detalle.Cantidad * detalle.PrecioUnitario;
                     detalles.Add(detalle);
+                }
+
+                if (dto.TipoEntregaId == 2) // ID 2 = Delivery
+                {
+                    // Obtener configuración de sucursal para saber costo
+                    var sucursal = await _unitOfWork.Sucursales.ObtenerPorIdAsync(dto.SucursalId, cancellationToken);
+                    if (sucursal != null)
+                    {
+                        pedido.Total += sucursal.PrecioDelivery;
+                    }
+                    // Si no existe sucursal o no tiene precio, asume 0 o precio base global si quisiéramos mantener backward compat (pero optamos por propiedad nueva)
                 }
 
                 pedido.DetallesPedido = detalles;
@@ -91,6 +116,25 @@ namespace BackendAtlas.Services.Implementations
 
                 // Commit: Guarda pedido + productos actualizados ATÓMICAMENTE
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                // ============ SIGNALR NOTIFICATION ============
+                try
+                {
+                    await _hubContext.Clients.Group(dto.SucursalId.ToString())
+                        .SendAsync("NuevoPedido", new
+                        {
+                            Id = pedido.Id,
+                            NombreCliente = pedido.NombreCliente,
+                            Total = pedido.Total,
+                            Fecha = pedido.FechaCreacion,
+                            Estado = "Pendiente"
+                        }, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't fail the order
+                    Console.WriteLine($"Error sending SignalR notification: {ex.Message}");
+                }
 
                 return new PedidoResponseDto
                 {
@@ -117,8 +161,24 @@ namespace BackendAtlas.Services.Implementations
             return _mapper.Map<IEnumerable<PedidoAdminListDto>>(pedidos);
         }
 
-        public async Task<IEnumerable<PedidoAdminListDto>> ObtenerPedidosPorSucursalAsync(int sucursalId, string? estadoNombre, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<PedidoAdminListDto>> ObtenerPedidosPorSucursalAsync(int sucursalId, string? estadoNombre, int? usuarioNegocioId, string? usuarioRol, int? usuarioSucursalId, CancellationToken cancellationToken = default)
         {
+            // Validación de seguridad (Lectura -> Repository)
+            if (usuarioRol == "AdminNegocio")
+            {
+                if (!usuarioNegocioId.HasValue)
+                     throw new UnauthorizedAccessException("Negocio ID no encontrado.");
+
+                var suc = await _sucursalRepository.ObtenerPorIdAsync(sucursalId, cancellationToken);
+                if (suc == null || suc.NegocioId != usuarioNegocioId.Value)
+                    throw new UnauthorizedAccessException("No tienes permisos sobre esta sucursal.");
+            }
+            else if (usuarioRol == "Empleado")
+            {
+                if (!usuarioSucursalId.HasValue || usuarioSucursalId.Value != sucursalId)
+                    throw new UnauthorizedAccessException("No tienes permisos sobre esta sucursal.");
+            }
+
             // CQS: Repo directo - Método semántico
             var pedidos = await _pedidoRepository.ObtenerPorSucursalYEstadoAsync(sucursalId, estadoNombre, cancellationToken);
             return _mapper.Map<IEnumerable<PedidoAdminListDto>>(pedidos);
@@ -126,13 +186,30 @@ namespace BackendAtlas.Services.Implementations
 
         // ============ COMMAND: Cambiar Estado (ESCRITURA) ============
 
-        public async Task CambiarEstadoPedidoAsync(int id, CambiarEstadoDto dto, CancellationToken cancellationToken = default)
+        public async Task CambiarEstadoPedidoAsync(int id, CambiarEstadoDto dto, int? usuarioNegocioId, string? usuarioRol, int? usuarioSucursalId, CancellationToken cancellationToken = default)
         {
             // Obtener pedido con tracking para actualizar
             var pedido = await _unitOfWork.Pedidos.ObtenerPorIdAsync(id, cancellationToken);
             if (pedido == null)
             {
                 throw new KeyNotFoundException($"Pedido con ID {id} no encontrado.");
+            }
+
+            // Seguridad: validar permissions
+            if (usuarioRol == "AdminNegocio")
+            {
+                 if (!usuarioNegocioId.HasValue)
+                     throw new UnauthorizedAccessException("Negocio ID no encontrado.");
+
+                 // Check sucursal ownership via UoW (consistent read for write op)
+                 var suc = await _unitOfWork.Sucursales.ObtenerPorIdAsync(pedido.SucursalId, cancellationToken);
+                  if (suc == null || suc.NegocioId != usuarioNegocioId.Value)
+                        throw new UnauthorizedAccessException("No tienes permisos sobre esta sucursal.");
+            }
+            else if (usuarioRol == "Empleado")
+            {
+                if (!usuarioSucursalId.HasValue || usuarioSucursalId.Value != pedido.SucursalId)
+                     throw new UnauthorizedAccessException("No tienes permisos sobre esta sucursal.");
             }
 
             // Actualizar estado

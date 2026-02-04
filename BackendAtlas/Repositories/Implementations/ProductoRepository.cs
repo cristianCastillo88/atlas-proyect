@@ -45,6 +45,25 @@ namespace BackendAtlas.Repositories.Implementations
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<(IEnumerable<Producto> Items, int TotalCount)> ObtenerCatalogoPorSucursalPaginadoAsync(int sucursalId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+        {
+            var query = _context.Productos
+                .AsNoTracking()
+                .Include(p => p.Categoria)
+                .Where(p => p.SucursalId == sucursalId && p.Activo);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var items = await query
+                .OrderBy(p => p.Categoria!.Nombre)
+                .ThenBy(p => p.Nombre)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (items, totalCount);
+        }
+
         public async Task<IEnumerable<Producto>> ObtenerTodosActivosAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Productos
@@ -52,6 +71,19 @@ namespace BackendAtlas.Repositories.Implementations
                 .Include(p => p.Categoria)
                 .Where(p => p.Activo)
                 .ToListAsync(cancellationToken);
+        }
+
+        public async Task<Dictionary<int, (decimal Precio, int Stock)>> ObtenerDatosDinamicosPorSucursalAsync(int sucursalId, CancellationToken cancellationToken = default)
+        {
+            // Query ultra-optimizada: solo trae Id, Precio y Stock (sin Include, sin navegación)
+            return await _context.Productos
+                .AsNoTracking()
+                .Where(p => p.SucursalId == sucursalId && p.Activo)
+                .Select(p => new { p.Id, p.Precio, p.Stock })
+                .ToDictionaryAsync(
+                    p => p.Id,
+                    p => (p.Precio, p.Stock),
+                    cancellationToken);
         }
 
         // ============ COMMANDS (Sin SaveChanges - lo maneja UnitOfWork) ============
