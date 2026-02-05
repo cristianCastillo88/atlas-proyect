@@ -49,11 +49,13 @@ namespace BackendAtlas.Controllers
         public async Task<ActionResult<IEnumerable<PedidoAdminListDto>>> GetPorSucursal(int sucursalId, [FromQuery] string? estado = null, CancellationToken cancellationToken = default)
         {
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            var negocioIdClaim = User.FindFirst("negocioId")?.Value;
+            
+            // Búsqueda resiliente de claims (case-insensitive)
+            var negocioIdClaim = User.Claims.FirstOrDefault(c => c.Type.Equals("negocioId", StringComparison.OrdinalIgnoreCase))?.Value;
             int.TryParse(negocioIdClaim ?? "0", out var negocioId);
             int? negocioIdNullable = negocioId == 0 ? null : negocioId;
 
-            var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
+            var sucursalIdClaim = User.Claims.FirstOrDefault(c => c.Type.Equals("sucursalId", StringComparison.OrdinalIgnoreCase))?.Value;
             int.TryParse(sucursalIdClaim ?? "0", out var usuarioSucursalId);
             int? usuarioSucursalIdNullable = usuarioSucursalId == 0 ? null : usuarioSucursalId;
 
@@ -73,11 +75,12 @@ namespace BackendAtlas.Controllers
         public async Task<IActionResult> PatchEstado(int id, CambiarEstadoDto request, CancellationToken cancellationToken = default)
         {
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            var negocioIdClaim = User.FindFirst("negocioId")?.Value;
+
+            var negocioIdClaim = User.Claims.FirstOrDefault(c => c.Type.Equals("negocioId", StringComparison.OrdinalIgnoreCase))?.Value;
             int.TryParse(negocioIdClaim ?? "0", out var negocioId);
             int? negocioIdNullable = negocioId == 0 ? null : negocioId;
 
-            var sucursalIdClaim = User.FindFirst("SucursalId")?.Value;
+            var sucursalIdClaim = User.Claims.FirstOrDefault(c => c.Type.Equals("sucursalId", StringComparison.OrdinalIgnoreCase))?.Value;
             int.TryParse(sucursalIdClaim ?? "0", out var usuarioSucursalId);
             int? usuarioSucursalIdNullable = usuarioSucursalId == 0 ? null : usuarioSucursalId;
 

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { $authToken, logout } from '../stores/auth';
+import { $authToken } from '../stores/auth';
 
 // Crear instancia base de Axios con config por defecto
 export const api = axios.create({
@@ -27,17 +27,20 @@ api.interceptors.request.use(
 );
 
 // Interceptor de Response: Manejo global de errores (ej: 401 Unauthorized)
+// Interceptor de Response: Manejo global de errores (ej: 401 Unauthorized)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       // Token expirado o inválido -> Logout
-      console.warn('Sesión expirada o no autorizada. Redirigiendo a login...');
-      logout();
+      console.warn('⚠️ API retornó 401 Unauthorized. Url:', error.config?.url);
+
+      // DESACTIVADO POR DEBUGGING: Evitar logout automático para diagnosticar permisos de empleado
+      // logout();
       // Opcional: Redirigir usando window.location si estamos en el cliente
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
+      // if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      //   window.location.href = '/login';
+      // }
     }
     return Promise.reject(error);
   }

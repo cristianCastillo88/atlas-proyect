@@ -1,10 +1,11 @@
 ---
 interface Props {
     title: string;
-    sucursalId?: number;
+    sucursalSlug: string;
+    sucursalName: string;
 }
 
-const { title, sucursalId } = Astro.props;
+const { title, sucursalSlug, sucursalName } = Astro.props;
 ---
 
 <!doctype html>
@@ -28,7 +29,7 @@ const { title, sucursalId } = Astro.props;
                 <div class="p-6 border-b border-white/10">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-10 h-10 bg-admin-primary rounded-lg flex items-center justify-center"
+                            class="w-10 h-10 bg-admin-primary rounded-lg flex items-center justify-center shrink-0"
                         >
                             <svg
                                 class="w-6 h-6 text-white"
@@ -44,16 +45,34 @@ const { title, sucursalId } = Astro.props;
                                 ></path>
                             </svg>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h1
                                 id="sucursal-sidebar-title"
-                                class="text-white font-bold text-xl tracking-tight"
+                                class="text-white font-bold text-lg leading-tight truncate"
+                                title={sucursalName}
                             >
-                                Sucursal
+                                {sucursalName}
                             </h1>
-                            <p class="text-white/60 text-xs">
-                                Panel de Gestión
-                            </p>
+                            <a
+                                href={`/sucursal/${sucursalSlug}`}
+                                target="_blank"
+                                class="text-admin-primary hover:text-white text-xs flex items-center gap-1 mt-0.5 transition-colors"
+                            >
+                                <span>Ver Tienda</span>
+                                <svg
+                                    class="w-3 h-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                    ></path>
+                                </svg>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -165,7 +184,10 @@ const { title, sucursalId } = Astro.props;
                 sessionStorage.getItem("userStore") ||
                 localStorage.getItem("userStore");
             if (userData) {
-                const user = JSON.parse(userData);
+                const parsed = JSON.parse(userData);
+                // Handle Nano Stores persistence structure or direct object
+                const user = parsed.state?.user || parsed;
+
                 const nameEl = document.getElementById("user-name");
                 const emailEl = document.getElementById("user-email");
                 const avatarEl = document.getElementById("user-avatar");

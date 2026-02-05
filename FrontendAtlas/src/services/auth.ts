@@ -1,6 +1,6 @@
 import { api } from '../lib/api';
 import { setLoginData, type UserData } from '../stores/auth';
-import type { AxiosError } from 'axios';
+// import type { AxiosError } from 'axios';
 
 // --- Interfaces (Contratos Estrictos) ---
 
@@ -41,6 +41,7 @@ export async function login(credentials: LoginPayload): Promise<UserData> {
             token: data.token || data.Token || '',
             role: data.role || data.Role || '',
             name: data.name || data.Name || '',
+            email: data.email || data.Email || '',
             negocioId: data.negocioId || data.NegocioId || undefined,
             sucursalId: data.sucursalId || data.SucursalId || undefined,
         };

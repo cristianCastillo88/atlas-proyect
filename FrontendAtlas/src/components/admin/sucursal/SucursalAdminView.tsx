@@ -8,13 +8,57 @@ import KitchenDisplay from './KitchenDisplay';
 import StoreConfigForm from './StoreConfigForm';
 import QRCodeSection from '../sucursales/QRCodeSection';
 import { Toaster } from 'sonner';
-import { signalRService } from '../../../services/signalr';
+import SucursalEmployeeView from './SucursalEmployeeView';
+import AccessDenied from '../common/AccessDenied';
+import { getUserRole } from '../../../utils/authUtils';
+import { useSucursalSignalR } from '../../../hooks/useSucursalSignalR';
 
 interface SucursalAdminViewProps {
     sucursalId: number;
 }
 
+// ============================================================================
+// COMPONENTE PRINCIPAL (DISPATCHER)
+// Decide qué vista mostrar según el rol de forma estricta
+// ============================================================================
 export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps) {
+    const [role, setRole] = useState<string>('');
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        // Usamos la utilidad centralizada
+        const currentRole = getUserRole();
+        setRole(currentRole);
+        setChecking(false);
+    }, []);
+
+    if (checking) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+            </div>
+        );
+    }
+
+    // 1. VISTA EMPLEADO
+    if (role === 'Empleado') {
+        return <SucursalEmployeeView sucursalId={sucursalId} />;
+    }
+
+    // 2. VISTA ADMINISTRADOR (Negocio o SuperAdmin)
+    const isAdmin = role === 'AdminNegocio' || role === 'SuperAdmin';
+    if (isAdmin) {
+        return <SucursalManagerView sucursalId={sucursalId} role={role} />;
+    }
+
+    // 3. ACCESO DENEGADO (Cualquier otro rol: Cliente, null, etc.)
+    return <AccessDenied message={`Tu rol (${role || 'Desconocido'}) no tiene acceso a la administración de sucursales.`} />;
+}
+
+// ============================================================================
+// VISTA DE ADMINISTRADOR
+// ============================================================================
+function SucursalManagerView({ sucursalId }: { sucursalId: number, role?: string }) {
     const [activeTab, setActiveTab] = useState('nuevo-pedido');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -28,105 +72,60 @@ export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps
     const [metodosPago, setMetodosPago] = useState<any[]>([]);
     const [tiposEntrega, setTiposEntrega] = useState<any[]>([]);
 
-    const [role, setRole] = useState<number | string>(0);
+    // Hook personalizado de SignalR (reemplaza lógica repetida)
+    useSucursalSignalR(sucursalId, (nuevoPedido) => {
+        setPedidos((prev) => [nuevoPedido, ...prev]);
+    });
 
     useEffect(() => {
         loadData();
-        checkRole();
     }, [sucursalId]);
 
-    const checkRole = () => {
-        const userData = sessionStorage.getItem("userStore") || localStorage.getItem("userStore");
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                const userObj = user.state?.user || user;
-                const rawRole = userObj.role || userObj.rol || userObj.Role;
-                setRole(rawRole);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    };
-
-    // ============ SIGNALR INTEGRATION ============
-    useEffect(() => {
-        // Obtenemos token del store para conectar
-        const token = localStorage.getItem('token') || (sessionStorage.getItem('userStore') ? JSON.parse(sessionStorage.getItem('userStore')!).state?.token : null);
-
-        // Mejor intento de obtener token (la lógica Auth varía en el proyecto parece)
-        // El servicio signalRService se encarga de la lógica de conexión
-        if (token) {
-            signalRService.connect(sucursalId, token);
-        }
-
-        signalRService.onNuevoPedido((pedido) => {
-            // Actualizar lista de pedidos si estamos en tab pedidos
-            // Add to state
-            setPedidos((prev) => [pedido, ...prev]);
-        });
-
-        return () => {
-            signalRService.disconnect();
-        };
-    }, [sucursalId]);
-
+    // Data fetching logic optimized for roles
     const loadData = async () => {
         try {
             setLoading(true);
 
-            // 1. Basic Public/Shared Data (Sucursal, Products, Metados)
-            const [
-                sucData,
-                prodData,
-                catData,
-                pagoData,
-                entregaData
-            ] = await Promise.all([
+            // Carga paralela de datos básicos
+            const promises = [
                 sucursalService.getSucursal(sucursalId),
                 sucursalService.getProductos(sucursalId),
                 sucursalService.getCategoriasBySucursal(sucursalId),
                 sucursalService.getMetodosPago(),
                 sucursalService.getTiposEntrega()
-            ]);
+            ];
 
-            setSucursal(sucData);
-            setProductos(prodData);
-            setCategorias(catData);
-            setMetodosPago(pagoData);
-            setTiposEntrega(entregaData);
+            const [sucData, prodData, catData, pagoData, entregaData] = await Promise.all(promises);
 
-            // 2. Transaccional Data (Pedidos) - usually allowed for authorized staff
+            setSucursal(sucData as any);
+            setProductos((prodData as any[]) || []);
+            setCategorias((catData as any[]) || []);
+            setMetodosPago((pagoData as any[]) || []);
+            setTiposEntrega((entregaData as any[]) || []);
+
+            // Pedidos
             try {
                 const pedData = await sucursalService.getPedidosPorSucursal(sucursalId);
                 setPedidos(pedData);
             } catch (e) {
-                console.warn("Failed to load Orders", e);
+                console.warn("No se pudieron cargar pedidos", e);
             }
 
-            // 3. Admin-Only Data (Empleados)
-            // If the user is just an 'Empleado', this endpoint might return 403 Forbidden.
-            // We should treat this failure gracefully.
+            // Empleados (Solo Admins llegan aquí por el Dispatcher, pero mantenemos try-catch por robustez)
             try {
                 const empData = await sucursalService.getEmpleadosPorSucursal(sucursalId);
                 setEmpleados(empData);
             } catch (e) {
-                console.warn("Failed to load Staff (insufficient permissions?)", e);
-                // Don't fail the whole view, just set empty staff list
-                setEmpleados([]);
+                console.warn("No se pudo cargar personal", e);
             }
 
         } catch (err: any) {
             console.error('Error loading sucursal data', err);
-            // Critical error only if basic data fails
-            setError('Error al cargar datos del negocio. Verifique su conexión.');
+            setError('Error al cargar datos del negocio. Puede que su sesión haya expirado o no tenga permisos.');
         } finally {
             setLoading(false);
         }
     };
-
-    // Determine sensitive tabs visibility
-    const isEmpleado = role === 'Empleado' || role === 3;
 
     if (loading) {
         return (
@@ -172,36 +171,30 @@ export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps
                         label="Carta"
                         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>}
                     />
-                    {!isEmpleado && (
-                        <NavButton
-                            active={activeTab === 'personal'}
-                            onClick={() => setActiveTab('personal')}
-                            label="Personal"
-                            icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>}
-                        />
-                    )}
+                    <NavButton
+                        active={activeTab === 'personal'}
+                        onClick={() => setActiveTab('personal')}
+                        label="Personal"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>}
+                    />
                     <NavButton
                         active={activeTab === 'pedidos'}
                         onClick={() => setActiveTab('pedidos')}
                         label="Pedidos"
                         icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>}
                     />
-                    {!isEmpleado && (
-                        <NavButton
-                            active={activeTab === 'configuracion'}
-                            onClick={() => setActiveTab('configuracion')}
-                            label="Configuración"
-                            icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>}
-                        />
-                    )}
-                    {!isEmpleado && (
-                        <NavButton
-                            active={activeTab === 'qr-code'}
-                            onClick={() => setActiveTab('qr-code')}
-                            label="Código QR"
-                            icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>}
-                        />
-                    )}
+                    <NavButton
+                        active={activeTab === 'configuracion'}
+                        onClick={() => setActiveTab('configuracion')}
+                        label="Configuración"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>}
+                    />
+                    <NavButton
+                        active={activeTab === 'qr-code'}
+                        onClick={() => setActiveTab('qr-code')}
+                        label="Código QR"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>}
+                    />
 
                 </nav>
 
@@ -265,7 +258,7 @@ export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps
                             categorias={categorias}
                         />
                     )}
-                    {activeTab === 'personal' && !isEmpleado && (
+                    {activeTab === 'personal' && (
                         <StaffManager
                             sucursalId={sucursalId}
                             initialEmpleados={empleados}
@@ -278,7 +271,7 @@ export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps
                             sucursalConfig={sucursal}
                         />
                     )}
-                    {activeTab === 'configuracion' && !isEmpleado && (
+                    {activeTab === 'configuracion' && (
                         <div className="h-full overflow-y-auto p-6 md:p-8">
                             <StoreConfigForm
                                 sucursalId={sucursalId}
@@ -286,7 +279,7 @@ export default function SucursalAdminView({ sucursalId }: SucursalAdminViewProps
                             />
                         </div>
                     )}
-                    {activeTab === 'qr-code' && !isEmpleado && (
+                    {activeTab === 'qr-code' && (
                         <div className="h-full overflow-y-auto p-6 md:p-8">
                             <QRCodeSection
                                 sucursalId={sucursalId}

@@ -5,6 +5,7 @@ export interface UserData {
   token: string;
   role: string;
   name: string;
+  email?: string;
   negocioId?: string;
   sucursalId?: string;
 }

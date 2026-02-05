@@ -198,19 +198,29 @@ const { title } = Astro.props;
             const userData =
                 sessionStorage.getItem("userStore") ||
                 localStorage.getItem("userStore");
-            if (userData) {
-                const user = JSON.parse(userData);
-                const nameEl = document.getElementById("user-name");
-                const emailEl = document.getElementById("user-email");
-                const avatarEl = document.getElementById("user-avatar");
 
-                if (nameEl && user.name) nameEl.textContent = user.name;
-                if (emailEl && user.email) emailEl.textContent = user.email;
-                if (avatarEl && user.name) {
-                    avatarEl.textContent = user.name
-                        .substring(0, 2)
-                        .toUpperCase();
+            if (userData) {
+                try {
+                    const parsed = JSON.parse(userData);
+                    // Handle Nano Stores persistence structure or direct object
+                    const user = parsed.state?.user || parsed;
+
+                    const nameEl = document.getElementById("user-name");
+                    const emailEl = document.getElementById("user-email");
+                    const avatarEl = document.getElementById("user-avatar");
+
+                    if (nameEl && user.name) nameEl.textContent = user.name;
+                    if (emailEl && user.email) emailEl.textContent = user.email;
+                    if (avatarEl && user.name) {
+                        avatarEl.textContent = user.name
+                            .substring(0, 2)
+                            .toUpperCase();
+                    }
+                } catch (e) {
+                    console.error("Error parsing user data in layout:", e);
                 }
+            } else {
+                // No user data found, but no console.warn needed for production
             }
 
             // Logout handler

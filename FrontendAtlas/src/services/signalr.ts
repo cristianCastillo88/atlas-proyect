@@ -41,21 +41,17 @@ class SignalRService {
         const baseUrl = import.meta.env.PUBLIC_API_URL || 'https://localhost:7029/api';
         const hubUrl = baseUrl.replace('/api', '/hubs/pedidos'); // Asumiendo estructura estándar
 
-        console.log(`Iniciando conexión SignalR a: ${hubUrl}`);
-
         this.connection = new HubConnectionBuilder()
             .withUrl(hubUrl, {
                 // Enviar token como query string porque WebSockets no soporta headers estándar en browser API
                 accessTokenFactory: () => this.token || ''
             })
             .withAutomaticReconnect()
-            .configureLogging(LogLevel.Information)
+            .configureLogging(LogLevel.Error)
             .build();
 
         // Listeners globales del hub
         this.connection.on("NuevoPedido", (pedido: NuevoPedidoEvent) => {
-            console.log("🔔 Nuevo Pedido Recibido:", pedido);
-
             // Audio Alert
             this.playNotificationSound();
 
@@ -77,12 +73,10 @@ class SignalRService {
 
         try {
             await this.connection.start();
-            console.log("✅ SignalR Conectado con ID: " + this.connection.connectionId);
             this.isConnected = true;
 
             // Unirse al grupo de la sucursal
             await this.connection.invoke("JoinSucursalGroup", this.sucursalId);
-            console.log(`📢 Unido al grupo de sucursal: ${this.sucursalId}`);
 
         } catch (err) {
             console.error("❌ Error conectando SignalR:", err);

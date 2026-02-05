@@ -1,163 +1,241 @@
 ---
 // Página de Login con diseño moderno
-import AuthLayout from '../layouts/AuthLayout.astro';
+import AuthLayout from "../layouts/AuthLayout.astro";
 ---
 
 <AuthLayout title="Login - Atlas">
   <!-- Background con gradiente -->
-  <div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4 relative overflow-hidden">
-    
+  <div
+    class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4 relative overflow-hidden"
+  >
     <!-- Decorative background elements -->
-    <div class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] bg-[size:32px_32px]"></div>
-    <div class="absolute top-0 -right-4 w-72 h-72 bg-primary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-    <div class="absolute -bottom-8 -left-4 w-72 h-72 bg-secondary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
-    
+    <div
+      class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] bg-[size:32px_32px]"
+    >
+    </div>
+    <div
+      class="absolute top-0 -right-4 w-72 h-72 bg-primary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+    >
+    </div>
+    <div
+      class="absolute -bottom-8 -left-4 w-72 h-72 bg-secondary-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+      style="animation-delay: 2s;"
+    >
+    </div>
+
     <!-- Login Card con glassmorphism -->
     <div class="relative w-full max-w-md">
-      <div class="glass shadow-2xl rounded-2xl p-8 backdrop-blur-xl border border-white/40 animate-fade-in">
-        
+      <div
+        class="glass shadow-2xl rounded-2xl p-8 backdrop-blur-xl border border-white/40 animate-fade-in"
+      >
         <!-- Logo y título -->
         <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg mb-4 mx-auto">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg mb-4 mx-auto"
+          >
             <span class="text-white font-bold text-2xl">A</span>
           </div>
-          <h2 class="text-3xl font-display font-bold text-gray-900 mb-2">Bienvenido</h2>
+          <h2 class="text-3xl font-display font-bold text-gray-900 mb-2">
+            Bienvenido
+          </h2>
           <p class="text-gray-600">Inicia sesión para continuar</p>
         </div>
-        
+
         <!-- Form -->
         <form id="loginForm" class="space-y-5">
           <div class="space-y-2">
-            <label for="email" class="block text-sm font-semibold text-gray-700">
+            <label
+              for="email"
+              class="block text-sm font-semibold text-gray-700"
+            >
               Correo Electrónico
             </label>
-            <input 
-              type="email" 
-              id="email" 
-              name="email" 
-              required 
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
               class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
               placeholder="tu@email.com"
             />
           </div>
-          
+
           <div class="space-y-2">
-            <label for="password" class="block text-sm font-semibold text-gray-700">
+            <label
+              for="password"
+              class="block text-sm font-semibold text-gray-700"
+            >
               Contraseña
             </label>
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              required 
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
               class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
               placeholder="••••••••"
             />
           </div>
-          
+
           <div class="flex items-center justify-between text-sm">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+              <input
+                type="checkbox"
+                class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
               <span class="text-gray-600">Recordarme</span>
             </label>
-            <a href="/forgot-password" class="text-primary-600 hover:text-primary-700 font-medium">
+            <a
+              href="/forgot-password"
+              class="text-primary-600 hover:text-primary-700 font-medium"
+            >
               ¿Olvidaste tu contraseña?
             </a>
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             id="loginButton"
             class="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <span id="buttonText">Iniciar Sesión</span>
-            <svg id="buttonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            <svg
+              id="buttonIcon"
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
             </svg>
-            <svg id="loadingSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg
+              id="loadingSpinner"
+              class="hidden w-5 h-5 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
           </button>
         </form>
-        
-        <!-- Divider -->
-        <div class="mt-6 text-center">
-          <p class="text-sm text-gray-600">
-            ¿No tienes una cuenta? 
-            <a href="/register" class="text-primary-600 hover:text-primary-700 font-semibold ml-1">
-              Regístrate aquí
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   </div>
 </AuthLayout>
 
 <script>
-  import { login } from '../services/auth';
-  import { toast } from 'sonner';
+  import { login } from "../services/auth";
+  import { toast } from "sonner";
 
-  const form = document.getElementById('loginForm') as HTMLFormElement;
-  const loginButton = document.getElementById('loginButton') as HTMLButtonElement;
-  const buttonText = document.getElementById('buttonText');
-  const buttonIcon = document.getElementById('buttonIcon');
-  const loadingSpinner = document.getElementById('loadingSpinner');
+  const form = document.getElementById("loginForm") as HTMLFormElement;
+  const loginButton = document.getElementById(
+    "loginButton",
+  ) as HTMLButtonElement;
+  const buttonText = document.getElementById("buttonText");
+  const buttonIcon = document.getElementById("buttonIcon");
+  const loadingSpinner = document.getElementById("loadingSpinner");
 
-  form?.addEventListener('submit', async (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
     // UI de loading
     loginButton.disabled = true;
-    loginButton.classList.add('opacity-75', 'cursor-not-allowed');
-    if (buttonText) buttonText.textContent = 'Iniciando sesión...';
-    buttonIcon?.classList.add('hidden');
-    loadingSpinner?.classList.remove('hidden');
+    loginButton.classList.add("opacity-75", "cursor-not-allowed");
+    if (buttonText) buttonText.textContent = "Iniciando sesión...";
+    buttonIcon?.classList.add("hidden");
+    loadingSpinner?.classList.remove("hidden");
 
     try {
-      console.log('Attempting login with:', email);
-      
+      // console.log("Attempting login with:", email);
+
       const userData = await login({ email, password });
-      
-      console.log('Login exitoso, datos:', userData);
-      
+
+      // console.log("Login exitoso, respuesta cruda:", userData);
+
       // Toast de éxito
-      toast.success('¡Bienvenido! Redirigiendo...', {
+      toast.success("¡Bienvenido! Redirigiendo...", {
         duration: 2000,
       });
-      
-      // Pequeña pausa para que se vea el toast
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Redirección inteligente según el rol
-      if (userData.role === 'SuperAdmin') {
-        window.location.href = '/admin/negocios';
-      } else if (userData.role === 'AdminNegocio') {
-        window.location.href = '/admin/negocios';
-      } else if (userData.role === 'Empleado') {
-        window.location.href = '/admin/negocios';
+
+      // Pequeña pausa visual
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Normalización agresiva de datos para evitar errores de mayúsculas/minúsculas
+      // Normalización
+      // @ts-ignore - Fallback para propiedades PascalCase
+      const role = (userData.role || (userData as any).Role || "").toString();
+      // @ts-ignore - Fallback para propiedades PascalCase
+      const sucursalId = userData.sucursalId || (userData as any).SucursalId;
+
+      // console.log("➡️ Redirigiendo según rol:", role);
+
+      // Redirección inteligente
+      if (role === "SuperAdmin") {
+        // console.log("Redirigiendo a SuperAdmin...");
+        window.location.href = "/admin/negocios";
+      } else if (role === "AdminNegocio") {
+        // console.log("Redirigiendo a AdminNegocio...");
+        window.location.href = "/admin/negocios";
+      } else if (role === "Empleado") {
+        if (sucursalId) {
+          // console.log(`Redirigiendo a Sucursal ${sucursalId}...`);
+          window.location.href = `/admin/sucursal/${sucursalId}`;
+        } else {
+          console.error("Error: Empleado sin sucursal asignada");
+          toast.error(
+            "Error de cuenta: No tienes una sucursal asignada. Avísale a tu administrador.",
+            {
+              duration: 5000,
+            },
+          );
+
+          // Restaurar UI
+          loginButton.disabled = false;
+          loginButton.classList.remove("opacity-75", "cursor-not-allowed");
+          if (buttonText) buttonText.textContent = "Iniciar Sesión";
+          buttonIcon?.classList.remove("hidden");
+          loadingSpinner?.classList.add("hidden");
+        }
       } else {
-        window.location.href = '/admin';
+        console.warn("Rol desconocido o no manejado:", role);
+        // Fallback genérico
+        window.location.href = "/admin";
       }
     } catch (error) {
-      console.error('Login error:', error);
-      
-      // Toast de error
-      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión. Verifica tus credenciales.';
+      console.error("Login error full details:", error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al iniciar sesión";
       toast.error(errorMessage, {
         duration: 4000,
       });
-      
+
       // Restaurar UI
       loginButton.disabled = false;
-      loginButton.classList.remove('opacity-75', 'cursor-not-allowed');
-      if (buttonText) buttonText.textContent = 'Iniciar Sesión';
-      buttonIcon?.classList.remove('hidden');
-      loadingSpinner?.classList.add('hidden');
+      loginButton.classList.remove("opacity-75", "cursor-not-allowed");
+      if (buttonText) buttonText.textContent = "Iniciar Sesión";
+      buttonIcon?.classList.remove("hidden");
+      loadingSpinner?.classList.add("hidden");
     }
   });
 </script>
