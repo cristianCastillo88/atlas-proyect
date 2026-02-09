@@ -128,7 +128,9 @@ try
     builder.Services.AddResponseCaching();
     builder.Services.AddMemoryCache();
 
-    builder.Services.AddSignalR();
+    builder.Services.AddSignalR(options => {
+        options.EnableDetailedErrors = true;
+    });
 
     var app = builder.Build();
 

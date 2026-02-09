@@ -41,10 +41,16 @@ class SignalRService {
         const baseUrl = import.meta.env.PUBLIC_API_URL || 'https://localhost:7029/api';
         const hubUrl = baseUrl.replace('/api', '/hubs/pedidos'); // Asumiendo estructura estándar
 
+        // Importamos HttpTransportType para mayor control
+        const { HttpTransportType } = await import("@microsoft/signalr");
+
         this.connection = new HubConnectionBuilder()
             .withUrl(hubUrl, {
                 // Enviar token como query string porque WebSockets no soporta headers estándar en browser API
-                accessTokenFactory: () => this.token || ''
+                accessTokenFactory: () => this.token || '',
+                // FORZAR WebSockets para evitar el error de negociación en Railway/Vercel
+                skipNegotiation: true,
+                transport: HttpTransportType.WebSockets
             })
             .withAutomaticReconnect()
             .configureLogging(LogLevel.Error)
