@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config'; // Config
 
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 
 // Permitir certificados self-signed en desarrollo (Backend .NET local HTTPS)
 if (process.env.NODE_ENV !== 'production') {
@@ -12,7 +12,9 @@ if (process.env.NODE_ENV !== 'production') {
 export default defineConfig({
   integrations: [tailwind(), react()],
   output: 'server',
-  adapter: node({
-    mode: 'standalone',
+  adapter: vercel({
+    webAnalytics: {
+      enabled: true,
+    },
   }),
 });

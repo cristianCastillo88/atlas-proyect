@@ -53,7 +53,7 @@ export default function QRCodeSection({ sucursalId, sucursalNombre, sucursalSlug
             // Actually let's revoke previous URL when changing to avoid leaks?
             // Doing it simple for now.
         };
-    }, [sucursalId, size]);
+    }, [sucursalId, size, sucursalSlug]);
 
     // Función download y demás handlers...
     const handleDownload = async () => {

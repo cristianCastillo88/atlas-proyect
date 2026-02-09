@@ -10,6 +10,7 @@ namespace BackendAtlas.Repositories.Interfaces
         // ============ QUERIES ============
         Task<Sucursal?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Sucursal?> ObtenerPorSlugConProductosAsync(string slug, CancellationToken cancellationToken = default);
+        Task<Sucursal?> ObtenerPorSlugAsync(string slug, CancellationToken cancellationToken = default);
         Task<IEnumerable<Sucursal>> ObtenerPorNegocioAsync(int negocioId, CancellationToken cancellationToken = default);
         
         // ============ COMMANDS ============

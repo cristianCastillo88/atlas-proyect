@@ -300,40 +300,6 @@ namespace BackendAtlas.Data
                     .OnDelete(DeleteBehavior.Cascade); // Si se elimina usuario, eliminar tokens
             });
 
-            // Data Seeding
-            modelBuilder.Entity<Negocio>().HasData(
-                new Negocio { Id = 1, Nombre = "Pizzeria Don Pepe", Slug = "pizzeria-don-pepe", UrlLogo = null, FechaRegistro = DateTime.Now }
-            );
-
-            modelBuilder.Entity<Sucursal>().HasData(
-                new Sucursal { Id = 1, NegocioId = 1, Nombre = "Centro", Direccion = "Calle Principal 123", Telefono = "123456789", Slug = "pizzeria-don-pepe-centro" }
-            );
-
-            modelBuilder.Entity<EstadoPedido>().HasData(
-                new EstadoPedido { Id = 1, Nombre = "Pendiente", Descripcion = "Pedido recibido, esperando confirmación" },
-                new EstadoPedido { Id = 2, Nombre = "En Preparacion", Descripcion = "Pedido en proceso de preparación" },
-                new EstadoPedido { Id = 3, Nombre = "Listo", Descripcion = "Pedido listo para entrega o retiro" },
-                new EstadoPedido { Id = 4, Nombre = "Entregado", Descripcion = "Pedido entregado al cliente" },
-                new EstadoPedido { Id = 5, Nombre = "Cancelado", Descripcion = "Pedido cancelado" }
-            );
-
-            // Seeding de TiposEntrega (globales para toda la plataforma)
-            modelBuilder.Entity<TipoEntrega>().HasData(
-                new TipoEntrega { Id = 1, Nombre = "Retiro en Local", PrecioBase = 0.00m },
-                new TipoEntrega { Id = 2, Nombre = "Delivery", PrecioBase = 5.00m }
-            );
-
-            // Seeding de MetodosPago (globales para toda la plataforma)
-            modelBuilder.Entity<MetodoPago>().HasData(
-                new MetodoPago { Id = 1, Nombre = "Efectivo", Descripcion = "Pago en efectivo", EsActivo = true },
-                new MetodoPago { Id = 2, Nombre = "Tarjeta de Crédito", Descripcion = "Pago con tarjeta de crédito", EsActivo = true },
-                new MetodoPago { Id = 3, Nombre = "Tarjeta de Débito", Descripcion = "Pago con tarjeta de débito", EsActivo = true },
-                new MetodoPago { Id = 4, Nombre = "Transferencia", Descripcion = "Pago por transferencia bancaria", EsActivo = true }
-            );
-
-            modelBuilder.Entity<Usuario>().HasData(
-                new Usuario { Id = 1, Email = "admin@sistema.com", PasswordHash = "$2a$11$TNMi61YITP34tpj5/fBNg.FNeAa9YuL.3LpV89ac9DhmDlT6vbAkO", Nombre = "Super Admin", NegocioId = null, Rol = RolUsuario.SuperAdmin }
-            );
         }
     }
 }

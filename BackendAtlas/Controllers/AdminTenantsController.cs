@@ -10,10 +10,12 @@ namespace BackendAtlas.Controllers
     public class AdminTenantsController : ControllerBase
     {
         private readonly ITenantService _tenantService;
+        private readonly INegocioService _negocioService;
 
-        public AdminTenantsController(ITenantService tenantService)
+        public AdminTenantsController(ITenantService tenantService, INegocioService negocioService)
         {
             _tenantService = tenantService;
+            _negocioService = negocioService;
         }
 
         [HttpPost("tenants/registrar-negocio")]
@@ -53,6 +55,25 @@ namespace BackendAtlas.Controllers
         {
             var tenants = await _tenantService.GetAllTenantsAsync(cancellationToken);
             return Ok(tenants);
+        }
+
+        [HttpPut("tenants/{id}")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> ActualizarNegocio(int id, [FromBody] NegocioUpdateDto dto, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var resultado = await _negocioService.ActualizarNegocioAsync(id, dto, cancellationToken);
+                return Ok(resultado);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Negocio no encontrado");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPatch("tenants/{id}/toggle-status")]

@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 export interface TenantDto {
   id: number;
   nombre: string;
+  slug: string;
   dueñoEmail: string;
   cantidadSucursales: number;
   activo: boolean;
@@ -26,6 +27,11 @@ export interface CrearSucursalPayload {
   telefono: string;
 }
 
+export interface UpdateNegocioPayload {
+  nombre: string;
+  slug: string;
+}
+
 export interface SucursalDto {
   id: number;
   negocioId: number;
@@ -33,6 +39,7 @@ export interface SucursalDto {
   slug: string;
   direccion: string;
   activo: boolean;
+  telefono: string;
 }
 
 export async function obtenerTodosLosNegocios(): Promise<TenantDto[]> {
@@ -66,6 +73,11 @@ export async function crearSucursal(payload: CrearSucursalPayload) {
 
 export async function alternarEstadoNegocio(id: number) {
   const { data } = await api.patch(`/Admin/tenants/${id}/toggle-status`);
+  return data;
+}
+
+export async function actualizarNegocio(id: number, payload: UpdateNegocioPayload) {
+  const { data } = await api.put(`/Admin/tenants/${id}`, payload);
   return data;
 }
 
@@ -107,7 +119,7 @@ export function getQRCodeSvgUrl(sucursalId: number, size: number = 20): string {
 
 export async function getQRCodeBlobUrl(sucursalId: number, size: number = 20): Promise<string> {
   const { data } = await api.get(`/Sucursales/${sucursalId}/qr`, {
-    params: { size },
+    params: { size, t: Date.now() },
     responseType: 'blob'
   });
   return URL.createObjectURL(data);
@@ -120,7 +132,7 @@ export async function getQRCodeBlobUrl(sucursalId: number, size: number = 20): P
 export async function downloadQRCode(sucursalId: number, size: number = 20): Promise<void> {
   // Usar instancia api para manejar base URL y Auth headers automáticamente
   const response = await api.get(`/Sucursales/${sucursalId}/qr/download`, {
-    params: { size },
+    params: { size, t: Date.now() },
     responseType: 'blob'
   });
 

@@ -17,15 +17,33 @@ if (!negocio || !sucursalParam) {
 
 const negocioSlug = negocio.toLowerCase();
 const sucursalSlug = sucursalParam.toLowerCase();
-const slugCompleto = `${negocioSlug}-${sucursalSlug}`;
 
 let sucursal: SucursalPublica;
+
 try {
-  // Using optimized fetch: parallel loading of static (cached) + dynamic (fresh) data
-  sucursal = await getSucursalPublicaOptimizada(slugCompleto);
+  // 1. Intentar slug directo (tal cual viene en la URL)
+  // Esto permite slugs personalizados como "centro" sin prefijo
+  sucursal = await getSucursalPublicaOptimizada(sucursalSlug);
 } catch (error) {
-  console.error(`Sucursal no encontrada: ${slugCompleto}`, error);
-  return Astro.redirect(`/${negocioSlug}`);
+  // 2. Fallback: Intentar con prefijo negocio- (convención legacy)
+  const slugCompuesto = `${negocioSlug}-${sucursalSlug}`;
+  try {
+    sucursal = await getSucursalPublicaOptimizada(slugCompuesto);
+  } catch (err2) {
+    console.error(
+      `Sucursal no encontrada: ${sucursalSlug} ni ${slugCompuesto}`,
+    );
+    return Astro.redirect(`/${negocioSlug}`);
+  }
+}
+
+// Validación de seguridad: Asegurar que la sucursal pertenece al negocio de la URL
+if (sucursal.negocioSlug.toLowerCase() !== negocioSlug) {
+  console.warn(
+    `Mismatch de negocio: URL=${negocioSlug}, Sucursal=${sucursal.negocioSlug}`,
+  );
+  // Redirigir a 404 o al negocio correcto (por seguridad, mejor 404 para no revelar info)
+  return Astro.redirect("/404");
 }
 ---
 

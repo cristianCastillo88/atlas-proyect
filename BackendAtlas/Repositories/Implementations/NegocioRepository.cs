@@ -35,5 +35,20 @@ namespace BackendAtlas.Repositories.Implementations
                 .Include(n => n.Usuarios)
                 .FirstOrDefaultAsync(n => n.Id == id, cancellationToken);
         }
+
+        public async Task<Negocio?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Negocios.FindAsync(new object[] { id }, cancellationToken);
+        }
+
+        public void Actualizar(Negocio negocio)
+        {
+            _context.Negocios.Update(negocio);
+        }
+
+        public async Task AgregarAsync(Negocio negocio, CancellationToken cancellationToken = default)
+        {
+            await _context.Negocios.AddAsync(negocio, cancellationToken);
+        }
     }
 }

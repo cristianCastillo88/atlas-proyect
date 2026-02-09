@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
     obtenerTodosLosNegocios,
@@ -6,9 +6,11 @@ import {
     crearSucursal,
     alternarEstadoNegocio,
     obtenerSucursalesPorNegocio,
-    alternarEstadoSucursal
+    alternarEstadoSucursal,
+    actualizarNegocio
 } from '../../../services/admin';
 import type { TenantDto, SucursalDto, CrearNegocioPayload, CrearSucursalPayload } from '../../../services/admin';
+import { sucursalService } from '../../../services/sucursal';
 
 interface NegociosManagerProps {
     initialNegocios: TenantDto[];
@@ -25,6 +27,15 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
     // Modals
     const [isNegocioModalOpen, setIsNegocioModalOpen] = useState(false);
     const [isSucursalModalOpen, setIsSucursalModalOpen] = useState({ open: false, negocioId: 0, negocioNombre: '' });
+
+    // Edit Modals
+    const [isEditNegocioModalOpen, setIsEditNegocioModalOpen] = useState(false);
+    const [editNegocioForm, setEditNegocioForm] = useState({ id: 0, nombre: '', slug: '' });
+
+    const [isEditSucursalModalOpen, setIsEditSucursalModalOpen] = useState(false);
+    const [editSucursalForm, setEditSucursalForm] = useState<SucursalDto & { slug: string }>({
+        id: 0, negocioId: 0, nombre: '', slug: '', direccion: '', telefono: '', activo: true
+    });
 
     // Forms
     const [negocioForm, setNegocioForm] = useState<CrearNegocioPayload>({
@@ -107,10 +118,14 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
             await alternarEstadoSucursal(sucursalId);
             toast.success('Estado de sucursal actualizado');
             // Update local state
-            setExpandedNegocios(prev => ({
-                ...prev,
-                [negocioId]: prev[negocioId].map(s => s.id === sucursalId ? { ...s, activo: !s.activo } : s)
-            }));
+            setExpandedNegocios(prev => {
+                const currentSucursales = prev[negocioId];
+                if (!currentSucursales) return prev;
+                return {
+                    ...prev,
+                    [negocioId]: currentSucursales.map(s => s.id === sucursalId ? { ...s, activo: !s.activo } : s)
+                };
+            });
         } catch (error) {
             toast.error('Error al actualizar sucursal');
         }
@@ -124,9 +139,9 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
         try {
             await crearSucursal({
                 negocioId: isSucursalModalOpen.negocioId,
-                nombre: sucursalForm.nombre,
-                direccion: sucursalForm.direccion,
-                telefono: sucursalForm.telefono
+                nombre: sucursalForm.nombre!,
+                direccion: sucursalForm.direccion!,
+                telefono: sucursalForm.telefono!
             });
             toast.success('Sucursal creada exitosamente');
             setIsSucursalModalOpen({ open: false, negocioId: 0, negocioNombre: '' });
@@ -140,6 +155,60 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
             refreshNegocios();
         } catch (error) {
             toast.error('Error al crear sucursal');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const prepareEditNegocio = (negocio: TenantDto) => {
+        setEditNegocioForm({ id: negocio.id, nombre: negocio.nombre, slug: negocio.slug || '' });
+        setIsEditNegocioModalOpen(true);
+    };
+
+    const handleUpdateNegocio = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await actualizarNegocio(editNegocioForm.id, {
+                nombre: editNegocioForm.nombre,
+                slug: editNegocioForm.slug
+            });
+            toast.success('Negocio actualizado exitosamente');
+            setIsEditNegocioModalOpen(false);
+            await refreshNegocios();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Error al actualizar negocio');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const prepareEditSucursal = (sucursal: SucursalDto) => {
+        setEditSucursalForm({ ...sucursal });
+        setIsEditSucursalModalOpen(true);
+    };
+
+    const handleUpdateSucursal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await sucursalService.updateSucursal(editSucursalForm.id, {
+                nombre: editSucursalForm.nombre,
+                slug: editSucursalForm.slug,
+                direccion: editSucursalForm.direccion,
+                telefono: editSucursalForm.telefono,
+            });
+            toast.success('Sucursal actualizada exitosamente');
+            setIsEditSucursalModalOpen(false);
+
+            // Refresh expanded list
+            if (editSucursalForm.negocioId) {
+                const updated = await obtenerSucursalesPorNegocio(editSucursalForm.negocioId);
+                setExpandedNegocios(prev => ({ ...prev, [editSucursalForm.negocioId]: updated }));
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Error al actualizar sucursal');
         } finally {
             setLoading(false);
         }
@@ -193,26 +262,35 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
                         </div>
 
                         {/* Expanded Sucursales Area */}
-                        {expandedNegocios[negocio.id] && (
+                        {expandedNegocios[negocio.id] && expandedNegocios[negocio.id]!.length >= 0 && (
                             <div className="mb-4 bg-gray-50 rounded-xl p-3 border border-admin-border animate-fadeIn">
                                 <h4 className="text-xs font-bold text-admin-text-secondary uppercase mb-2">Sucursales</h4>
                                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {expandedNegocios[negocio.id].map(sucursal => (
+                                    {expandedNegocios[negocio.id]!.map(sucursal => (
                                         <div key={sucursal.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
                                             <div className="min-w-0">
                                                 <p className="text-xs font-bold text-admin-text truncate">{sucursal.nombre}</p>
                                                 <p className="text-[10px] text-gray-500 truncate">{sucursal.direccion}</p>
                                             </div>
-                                            <button
-                                                onClick={() => handleToggleSucursal(sucursal.id, negocio.id)}
-                                                className={`shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors ${sucursal.activo ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-red-500 bg-red-50 hover:bg-red-100'}`}
-                                                title={sucursal.activo ? 'Desactivar' : 'Activar'}
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            </button>
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => prepareEditSucursal(sucursal)}
+                                                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                                    title="Editar"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleToggleSucursal(sucursal.id, negocio.id)}
+                                                    className={`shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors ${sucursal.activo ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-red-500 bg-red-50 hover:bg-red-100'}`}
+                                                    title={sucursal.activo ? 'Desactivar' : 'Activar'}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
-                                    {expandedNegocios[negocio.id].length === 0 && (
+                                    {expandedNegocios[negocio.id]!.length === 0 && (
                                         <p className="text-xs text-gray-400 text-center py-2">No hay sucursales</p>
                                     )}
                                 </div>
@@ -224,8 +302,8 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
                             <button
                                 onClick={() => toggleSucursalesView(negocio.id)}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${expandedNegocios[negocio.id]
-                                        ? 'bg-admin-text text-white shadow-lg'
-                                        : 'bg-white border border-admin-border text-admin-text hover:bg-gray-50'
+                                    ? 'bg-admin-text text-white shadow-lg'
+                                    : 'bg-white border border-admin-border text-admin-text hover:bg-gray-50'
                                     }`}
                             >
                                 {loadingSucursales[negocio.id] ? (
@@ -236,6 +314,13 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
                                 {expandedNegocios[negocio.id] ? 'Ocultar' : 'Ver Sucursales'}
                             </button>
 
+                            <button
+                                onClick={() => prepareEditNegocio(negocio)}
+                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                title="Editar Negocio"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
                             <button
                                 onClick={() => handleToggleNegocio(negocio.id)}
                                 className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${negocio.activo ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
@@ -354,6 +439,84 @@ export default function NegociosManager({ initialNegocios }: NegociosManagerProp
                                 <button type="button" onClick={() => setIsSucursalModalOpen({ ...isSucursalModalOpen, open: false })} className="flex-1 px-4 py-2.5 rounded-xl border border-admin-border text-admin-text hover:bg-gray-50 font-medium transition-colors">Cancelar</button>
                                 <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-xl bg-admin-primary text-white font-bold shadow-lg shadow-admin-primary/20 hover:bg-admin-primary-dark transition-colors disabled:opacity-50">
                                     {loading ? 'Creando...' : 'Crear Sucursal'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Editar Negocio */}
+            {isEditNegocioModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+                        <div className="p-5 border-b border-admin-border flex justify-between items-center bg-gray-50/50">
+                            <h3 className="font-bold text-xl text-admin-text">Editar Negocio</h3>
+                            <button onClick={() => setIsEditNegocioModalOpen(false)} className="text-gray-400 hover:text-admin-text transition-colors">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateNegocio} className="p-6 flex flex-col gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Nombre</label>
+                                <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all"
+                                    value={editNegocioForm.nombre} onChange={e => setEditNegocioForm({ ...editNegocioForm, nombre: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Slug (URL)</label>
+                                <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-mono text-xs"
+                                    value={editNegocioForm.slug} onChange={e => setEditNegocioForm({ ...editNegocioForm, slug: e.target.value })} />
+                                <p className="text-[10px] text-amber-600 mt-1">⚠ Cambiar el slug romperá los códigos QR existentes.</p>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button type="button" onClick={() => setIsEditNegocioModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-admin-border text-admin-text hover:bg-gray-50 font-medium transition-colors">Cancelar</button>
+                                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-xl bg-admin-primary text-white font-bold shadow-lg shadow-admin-primary/20 hover:bg-admin-primary-dark transition-colors disabled:opacity-50">
+                                    {loading ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Editar Sucursal */}
+            {isEditSucursalModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+                        <div className="p-5 border-b border-admin-border flex justify-between items-center bg-gray-50/50">
+                            <h3 className="font-bold text-xl text-admin-text">Editar Sucursal</h3>
+                            <button onClick={() => setIsEditSucursalModalOpen(false)} className="text-gray-400 hover:text-admin-text transition-colors">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateSucursal} className="p-6 flex flex-col gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Nombre</label>
+                                <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all"
+                                    value={editSucursalForm.nombre} onChange={e => setEditSucursalForm({ ...editSucursalForm, nombre: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Slug (URL)</label>
+                                <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-mono text-xs"
+                                    value={editSucursalForm.slug} onChange={e => setEditSucursalForm({ ...editSucursalForm, slug: e.target.value })} />
+                                <p className="text-[10px] text-amber-600 mt-1">⚠ Cambiar el slug romperá los códigos QR existentes.</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Dirección</label>
+                                    <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all"
+                                        value={editSucursalForm.direccion} onChange={e => setEditSucursalForm({ ...editSucursalForm, direccion: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-admin-text-secondary uppercase mb-1 block">Teléfono</label>
+                                    <input required type="text" className="w-full px-4 py-2 bg-white border border-admin-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all"
+                                        value={editSucursalForm.telefono} onChange={e => setEditSucursalForm({ ...editSucursalForm, telefono: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button type="button" onClick={() => setIsEditSucursalModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-admin-border text-admin-text hover:bg-gray-50 font-medium transition-colors">Cancelar</button>
+                                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-xl bg-admin-primary text-white font-bold shadow-lg shadow-admin-primary/20 hover:bg-admin-primary-dark transition-colors disabled:opacity-50">
+                                    {loading ? 'Guardando...' : 'Guardar Cambios'}
                                 </button>
                             </div>
                         </form>

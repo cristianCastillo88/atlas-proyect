@@ -6,5 +6,6 @@ namespace BackendAtlas.Services.Interfaces
     {
         Task<NegocioPublicoDto?> GetNegocioPublicoAsync(string slug, CancellationToken cancellationToken = default);
         Task<NegocioBasicDto?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<NegocioBasicDto> ActualizarNegocioAsync(int id, NegocioUpdateDto dto, CancellationToken cancellationToken = default);
     }
 }

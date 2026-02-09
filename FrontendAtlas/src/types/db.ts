@@ -3,6 +3,7 @@ export interface Sucursal {
     nombre: string;
     direccion: string;
     telefono: string;
+    slug: string;
     horario?: string; // Present in [id].astro usage
     urlInstagram?: string;
     urlFacebook?: string;

@@ -28,8 +28,16 @@ namespace BackendAtlas.Repositories.Implementations
         {
             return await _context.Sucursales
                 .AsNoTracking()
+                .Include(s => s.Negocio)
                 .Include(s => s.Productos)
                  .ThenInclude(p => p.Categoria)
+                .FirstOrDefaultAsync(s => s.Slug == slug && s.Activo, cancellationToken);
+        }
+
+        public async Task<Sucursal?> ObtenerPorSlugAsync(string slug, CancellationToken cancellationToken = default)
+        {
+            return await _context.Sucursales
+                .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Slug == slug && s.Activo, cancellationToken);
         }
 

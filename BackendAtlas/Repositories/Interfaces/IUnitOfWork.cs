@@ -15,6 +15,7 @@ namespace BackendAtlas.Repositories.Interfaces
         ICategoriaRepository Categorias { get; }
         ISucursalRepository Sucursales { get; }
         IUsuarioRepository Usuarios { get; }
+        INegocioRepository Negocios { get; }
 
         // Persistencia - Guarda todos los cambios pendientes
         Task<int> CompleteAsync(CancellationToken cancellationToken = default);

@@ -95,6 +95,18 @@ namespace BackendAtlas.Services.Implementations
             }
             // SuperAdmin puede modificar cualquiera
 
+            // Validar unicidad de Slug si cambió
+            if (sucursal.Slug != dto.Slug)
+            {
+                var sucursalExistente = await _sucursalRepository.ObtenerPorSlugConProductosAsync(dto.Slug, cancellationToken);
+                if (sucursalExistente != null && sucursalExistente.Id != id)
+                {
+                    throw new InvalidOperationException("El slug indicado ya está siendo utilizado por otra sucursal.");
+                }
+            }
+
+            sucursal.Nombre = dto.Nombre;
+            sucursal.Slug = dto.Slug;
             sucursal.Direccion = dto.Direccion;
             sucursal.Telefono = dto.Telefono;
             sucursal.Horario = dto.Horario;
@@ -287,6 +299,7 @@ namespace BackendAtlas.Services.Implementations
                 Direccion = sucursal.Direccion,
                 Telefono = sucursal.Telefono,
                 Slug = sucursal.Slug,
+                NegocioSlug = sucursal.Negocio?.Slug ?? string.Empty,
                 Horario = sucursal.Horario,
                 UrlInstagram = sucursal.UrlInstagram,
                 UrlFacebook = sucursal.UrlFacebook,
@@ -318,8 +331,8 @@ namespace BackendAtlas.Services.Implementations
         /// </summary>
         public async Task<Dictionary<int, ProductoDinamicoDto>> ObtenerDatosDinamicosPorSlugAsync(string slug, CancellationToken cancellationToken = default)
         {
-            // Primero obtener la sucursal para validar que existe
-            var sucursal = await _sucursalRepository.ObtenerPorSlugConProductosAsync(slug, cancellationToken);
+            // Primero obtener la sucursal para validar que existe (OPTIMIZADO: Sin includes)
+            var sucursal = await _sucursalRepository.ObtenerPorSlugAsync(slug, cancellationToken);
             if (sucursal == null)
             {
                 return new Dictionary<int, ProductoDinamicoDto>();

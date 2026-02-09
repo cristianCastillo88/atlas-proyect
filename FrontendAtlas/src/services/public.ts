@@ -68,6 +68,7 @@ export interface SucursalPublicaEstatica {
   direccion: string;
   telefono: string;
   slug: string;
+  negocioSlug: string;
   horario?: string;
   urlInstagram?: string;
   urlFacebook?: string;
@@ -103,6 +104,7 @@ export interface SucursalPublica {
   direccion: string;
   telefono: string;
   slug: string;
+  negocioSlug: string;
   horario?: string;
   urlInstagram?: string;
   urlFacebook?: string;

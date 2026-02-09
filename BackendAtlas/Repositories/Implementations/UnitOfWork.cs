@@ -15,6 +15,7 @@ namespace BackendAtlas.Repositories.Implementations
         private ICategoriaRepository? _categorias;
         private ISucursalRepository? _sucursales;
         private IUsuarioRepository? _usuarios;
+        private INegocioRepository? _negocios;
 
         public UnitOfWork(
             AppDbContext context,
@@ -22,7 +23,8 @@ namespace BackendAtlas.Repositories.Implementations
             IPedidoRepository pedidoRepository,
             ICategoriaRepository categoriaRepository,
             ISucursalRepository sucursalRepository,
-            IUsuarioRepository usuarioRepository)
+            IUsuarioRepository usuarioRepository,
+            INegocioRepository negocioRepository)
         {
             _context = context;
             _productos = productoRepository;
@@ -30,6 +32,7 @@ namespace BackendAtlas.Repositories.Implementations
             _categorias = categoriaRepository;
             _sucursales = sucursalRepository;
             _usuarios = usuarioRepository;
+            _negocios = negocioRepository;
         }
 
         // Propiedades de repositorios
@@ -80,6 +83,16 @@ namespace BackendAtlas.Repositories.Implementations
                 if (_usuarios == null)
                     throw new InvalidOperationException("UsuarioRepository not initialized");
                 return _usuarios;
+            }
+        }
+
+        public INegocioRepository Negocios 
+        {
+            get
+            {
+                if (_negocios == null)
+                    throw new InvalidOperationException("NegocioRepository not initialized");
+                return _negocios;
             }
         }
 

@@ -4,6 +4,7 @@ namespace BackendAtlas.DTOs
     {
         public int Id { get; set; }
         public required string Nombre { get; set; }
+        public string? Slug { get; set; }
         public required string DueñoEmail { get; set; }
         public int CantidadSucursales { get; set; }
         public bool Activo { get; set; }

@@ -92,6 +92,23 @@ try
 
     var app = builder.Build();
 
+    // ============ SEEDING DE BASE DE DATOS ============
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<AppDbContext>();
+            var configuration = services.GetRequiredService<IConfiguration>();
+            DbInitializer.Initialize(context, configuration);
+            Log.Information("Base de datos inicializada/verificada correctamente.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al inicializar la base de datos.");
+        }
+    }
+
     // Configure the HTTP request pipeline.
     app.UseMiddleware<ExceptionMiddleware>();
 

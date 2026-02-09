@@ -139,6 +139,7 @@ namespace BackendAtlas.Services.Implementations
             {
                 Id = n.Id,
                 Nombre = n.Nombre,
+                Slug = n.Slug,
                 DueñoEmail = n.Usuarios?.FirstOrDefault(u => u.Rol == RolUsuario.AdminNegocio)?.Email ?? "N/A",
                 CantidadSucursales = n.Sucursales?.Count ?? 0,
                 Activo = n.Activo,
