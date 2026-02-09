@@ -27,9 +27,43 @@ try
         .AddApplicationServices(builder.Configuration)
         .AddJwtAuthentication(builder.Configuration);
 
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+                         ?? builder.Configuration["DefaultConnection"];
+
+    // Traductor universal de MySQL URL a formato EF Core
+    if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            var uri = new Uri(connectionString);
+            var db = uri.AbsolutePath.TrimStart('/');
+            var userPass = uri.UserInfo.Split(':');
+            var user = userPass[0];
+            var pass = userPass.Length > 1 ? userPass[1] : "";
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 3306;
+            connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pass};SSL Mode=None;";
+        }
+        catch { /* Fallback a la original */ }
+    }
+
+    // Fallback absoluto para Railway
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        var host = builder.Configuration["MYSQLHOST"];
+        var user = builder.Configuration["MYSQLUSER"];
+        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(user))
+        {
+            var port = builder.Configuration["MYSQLPORT"] ?? "3306";
+            var db = builder.Configuration["MYSQLDATABASE"] ?? "railway";
+            var pwd = builder.Configuration["MYSQLPASSWORD"];
+            connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pwd};";
+        }
+    }
+
     builder.Services.AddHealthChecks()
         .AddMySql(
-            builder.Configuration.GetConnectionString("DefaultConnection") ?? builder.Configuration["DefaultConnection"]!,
+            connectionString!,
             name: "database",
             tags: new[] { "db", "sql", "mysql" })
         .AddCheck("api", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("API is running"));
