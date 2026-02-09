@@ -15,6 +15,8 @@ class SignalRService {
     private sucursalId: string | null = null;
     private token: string | null = null;
     private isConnected = false;
+    private isConnecting = false;
+    private connectionPromise: Promise<void> | null = null;
     private reconnectInterval = 5000;
 
     // Callbacks events
@@ -25,10 +27,29 @@ class SignalRService {
     }
 
     public async connect(sucursalId: number, token: string) {
+        // 1. Si ya estamos conectando, esperar a esa promesa
+        if (this.isConnecting && this.connectionPromise) {
+            return this.connectionPromise;
+        }
+
+        // 2. Si ya estamos conectados a la misma sucursal, no hacer nada
         if (this.connection && this.isConnected && this.sucursalId === sucursalId.toString()) {
             console.log("SignalR ya conectado a esta sucursal.");
             return;
         }
+
+        this.isConnecting = true;
+        this.connectionPromise = this._internalConnect(sucursalId, token);
+
+        try {
+            await this.connectionPromise;
+        } finally {
+            this.isConnecting = false;
+            this.connectionPromise = null;
+        }
+    }
+
+    private async _internalConnect(sucursalId: number, token: string) {
 
         // Si hay una conexión previa, desconectar limpiamente
         if (this.connection) {

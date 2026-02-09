@@ -188,7 +188,7 @@ namespace BackendAtlas.Controllers
         /// </summary>
         [HttpGet("{id}/qr")]
         [Authorize(Roles = "SuperAdmin, AdminNegocio, Empleado")]
-        [ResponseCache(Duration = 2592000)] // 30 días
+        [ResponseCache(Duration = 3600)] // 1 hora
         [ProducesResponseType(typeof(FileResult), 200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetQRCode(
@@ -213,7 +213,7 @@ namespace BackendAtlas.Controllers
             if (negocio == null) return NotFound("Negocio no encontrado");
 
             // Construir URL completa: /negocio/sucursal
-            var baseUrl = _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = _configuration["FRONTEND_URL"] ?? _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
             
             // Asumiendo que el slug de sucursal es "negocio-sucursal", extraemos la parte de sucursal
             // Si no coincide el prefijo, usamos el slug completo por seguridad, pero idealmente es anidado
@@ -236,7 +236,7 @@ namespace BackendAtlas.Controllers
         /// </summary>
         [HttpGet("{id}/qr/download")]
         [Authorize(Roles = "SuperAdmin, AdminNegocio, Empleado")]
-        [ResponseCache(Duration = 2592000)] // 30 días
+        [ResponseCache(Duration = 3600)] // 1 hora
         [ProducesResponseType(typeof(FileResult), 200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DownloadQRCode(
@@ -258,7 +258,7 @@ namespace BackendAtlas.Controllers
             var negocio = await _negocioService.ObtenerPorIdAsync(sucursal.NegocioId, cancellationToken);
             if (negocio == null) return NotFound("Negocio no encontrado");
 
-            var baseUrl = _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = _configuration["FRONTEND_URL"] ?? _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
             var sucursalSlugParte = sucursal.Slug.StartsWith($"{negocio.Slug}-") 
                 ? sucursal.Slug.Substring(negocio.Slug.Length + 1)
                 : sucursal.Slug;
@@ -278,7 +278,7 @@ namespace BackendAtlas.Controllers
         /// </summary>
         [HttpGet("{id}/qr/svg")]
         [Authorize(Roles = "SuperAdmin, AdminNegocio, Empleado")]
-        [ResponseCache(Duration = 2592000)] // 30 días
+        [ResponseCache(Duration = 3600)] // 1 hora
         [ProducesResponseType(typeof(string), 200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetQRCodeSvg(
@@ -300,7 +300,7 @@ namespace BackendAtlas.Controllers
             var negocio = await _negocioService.ObtenerPorIdAsync(sucursal.NegocioId, cancellationToken);
             if (negocio == null) return NotFound("Negocio no encontrado");
 
-            var baseUrl = _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = _configuration["FRONTEND_URL"] ?? _configuration["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
             var sucursalSlugParte = sucursal.Slug.StartsWith($"{negocio.Slug}-") 
                 ? sucursal.Slug.Substring(negocio.Slug.Length + 1)
                 : sucursal.Slug;
