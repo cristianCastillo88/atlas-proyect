@@ -8,14 +8,8 @@ namespace BackendAtlas.Data
     {
         public static void Initialize(AppDbContext context, IConfiguration configuration)
         {
-            Console.WriteLine(">>> DbInitializer: Iniciando migración de base de datos...");
-            Serilog.Log.Information("Iniciando proceso de migración y sembrado de base de datos...");
-
             // Ejecutar migraciones automáticamente al iniciar
             context.Database.Migrate();
-
-            Console.WriteLine(">>> DbInitializer: Migraciones completadas.");
-            Serilog.Log.Information("Migraciones aplicadas con éxito.");
 
             // 1. Sembrar Estados de Pedido
             if (!context.EstadosPedido.Any())
@@ -49,13 +43,15 @@ namespace BackendAtlas.Data
                 );
             }
 
-            // 4. Sembrar SuperAdmin
-            if (!context.Usuarios.Any(u => u.Rol == RolUsuario.SuperAdmin))
-            {
-                var adminEmail = configuration["SUPERADMIN_EMAIL"] ?? "admin@sistema.com";
-                var adminPassword = configuration["SUPERADMIN_PASSWORD"] ?? "Admin123*";
-                var adminNombre = configuration["SUPERADMIN_NOMBRE"] ?? "Super Admin";
+            // 4. Sembrar/Sincronizar SuperAdmin
+            var adminEmail = configuration["SUPERADMIN_EMAIL"] ?? "admin@sistema.com";
+            var adminPassword = configuration["SUPERADMIN_PASSWORD"] ?? "Admin123*";
+            var adminNombre = configuration["SUPERADMIN_NOMBRE"] ?? "Super Admin";
 
+            var existingAdmin = context.Usuarios.FirstOrDefault(u => u.Rol == RolUsuario.SuperAdmin);
+
+            if (existingAdmin == null)
+            {
                 var superAdmin = new Usuario
                 {
                     Email = adminEmail,
@@ -67,6 +63,18 @@ namespace BackendAtlas.Data
                 };
 
                 context.Usuarios.Add(superAdmin);
+            }
+            else
+            {
+                // Si ya existe pero el email es diferente al de la configuración, lo actualizamos
+                // Esto permite corregir el correo si las variables de entorno cambiaron
+                if (existingAdmin.Email != adminEmail)
+                {
+                    existingAdmin.Email = adminEmail;
+                    existingAdmin.Nombre = adminNombre;
+                    // También actualizamos el password por si acaso es el primer despliegue con variables reales
+                    existingAdmin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+                }
             }
 
             context.SaveChanges();

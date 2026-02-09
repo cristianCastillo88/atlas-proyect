@@ -5,8 +5,6 @@ using BackendAtlas.Data;
 using Serilog;
 using Asp.Versioning;
 
-Console.WriteLine(">>> BackendAtlas: Iniciando proceso de arranque...");
-
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder()
         .AddJsonFile("appsettings.json")
@@ -16,10 +14,8 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "BackendAtlas")
     .Enrich.WithProperty("Environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production")
-    .WriteTo.Console() // Asegurar salida a consola
+    .WriteTo.Console()
     .CreateLogger();
-
-Log.Information("Serilog configurado. Iniciando WebApplicationBuilder...");
 
 try
 {
