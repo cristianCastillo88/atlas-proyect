@@ -1,4 +1,4 @@
-using BackendAtlas.Data;
+     using BackendAtlas.Data;
 using BackendAtlas.Repositories.Implementations;
 using BackendAtlas.Repositories.Interfaces;
 using BackendAtlas.Services.Implementations;
@@ -100,14 +100,23 @@ namespace BackendAtlas.Extensions
                     {
                         if (allowedOrigins != null && allowedOrigins.Length > 0)
                         {
-                            policy.WithOrigins(allowedOrigins)
-                                  .AllowAnyMethod()
-                                  .AllowAnyHeader()
-                                  .AllowCredentials();
+                            if (allowedOrigins.Contains("*"))
+                            {
+                                policy.SetIsOriginAllowed(_ => true)
+                                      .AllowAnyMethod()
+                                      .AllowAnyHeader()
+                                      .AllowCredentials();
+                            }
+                            else
+                            {
+                                policy.WithOrigins(allowedOrigins)
+                                      .AllowAnyMethod()
+                                      .AllowAnyHeader()
+                                      .AllowCredentials();
+                            }
                         }
                         else
                         {
-                            // Fallback if no origins configured - still restrictive
                             policy.WithOrigins("https://localhost:3000")
                                   .AllowAnyMethod()
                                   .AllowAnyHeader()
