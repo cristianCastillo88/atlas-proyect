@@ -37,7 +37,7 @@ namespace BackendAtlas.Controllers
         [Authorize(Roles = "AdminNegocio,SuperAdmin,Empleado")]
         public async Task<IActionResult> ListarPorSucursal(int sucursalId, CancellationToken cancellationToken = default)
         {
-            var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+            var rol = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
             var negocioIdClaim = User.FindFirst("negocioId")?.Value;
             int.TryParse(negocioIdClaim ?? "0", out var negocioId);
             

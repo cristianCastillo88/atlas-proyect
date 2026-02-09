@@ -57,7 +57,7 @@ namespace BackendAtlas.Data
                     Nombre = adminNombre,
                     Rol = RolUsuario.SuperAdmin,
                     Activo = true,
-                    FechaRegistro = DateTime.UtcNow
+                    FechaCreacion = DateTime.UtcNow
                 };
 
                 context.Usuarios.Add(superAdmin);

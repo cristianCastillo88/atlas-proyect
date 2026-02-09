@@ -20,8 +20,8 @@ namespace BackendAtlas.Domain
         public Negocio? Negocio { get; set; }
 
         // Navegaciones inversas
-        public ICollection<Categoria>? Categorias { get; set; }
-        public ICollection<Producto>? Productos { get; set; }
-        public ICollection<Pedido>? Pedidos { get; set; }
+        public ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
+        public ICollection<Producto> Productos { get; set; } = new List<Producto>();
+        public ICollection<Pedido> Pedidos { get; set; } = new List<Pedido>();
     }
 }

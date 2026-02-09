@@ -10,7 +10,7 @@ namespace BackendAtlas.Domain
         public bool Activo { get; set; } = true;
 
         // Navegación inversa
-        public ICollection<Sucursal>? Sucursales { get; set; }
-        public ICollection<Usuario>? Usuarios { get; set; }
+        public ICollection<Sucursal> Sucursales { get; set; } = new List<Sucursal>();
+        public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }
 }
