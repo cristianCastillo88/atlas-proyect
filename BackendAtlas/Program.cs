@@ -28,8 +28,10 @@ try
         .AddJwtAuthentication(builder.Configuration);
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-                         ?? builder.Configuration["DefaultConnection"]
-                         ?? builder.Configuration["DATABASE_URL"];
+                         ?? builder.Configuration["DefaultConnection"] 
+                         ?? builder.Configuration["DATABASE_URL"]
+                         ?? builder.Configuration["MYSQL_URL"]
+                         ?? builder.Configuration["MYSQLURL"];
 
     // Traductor universal de MySQL URL a formato EF Core
     if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
@@ -45,26 +47,26 @@ try
             var port = uri.Port > 0 ? uri.Port : 3306;
             connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pass};SSL Mode=None;";
         }
-        catch { /* Fallback a la original */ }
+        catch { Log.Warning("No se pudo traducir el formato mysql:// en Program.cs"); }
     }
 
     // Fallback absoluto para Railway
     if (string.IsNullOrEmpty(connectionString))
     {
-        var host = builder.Configuration["MYSQLHOST"];
-        var user = builder.Configuration["MYSQLUSER"];
+        var host = builder.Configuration["MYSQLHOST"] ?? builder.Configuration["MYSQL_HOST"];
+        var user = builder.Configuration["MYSQLUSER"] ?? builder.Configuration["MYSQL_USER"];
         if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(user))
         {
-            var port = builder.Configuration["MYSQLPORT"] ?? "3306";
-            var db = builder.Configuration["MYSQLDATABASE"] ?? "railway";
-            var pwd = builder.Configuration["MYSQLPASSWORD"];
+            var port = builder.Configuration["MYSQLPORT"] ?? builder.Configuration["MYSQL_PORT"] ?? "3306";
+            var db = builder.Configuration["MYSQLDATABASE"] ?? builder.Configuration["MYSQL_DATABASE"] ?? "railway";
+            var pwd = builder.Configuration["MYSQLPASSWORD"] ?? builder.Configuration["MYSQL_PASSWORD"];
             connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pwd};";
         }
     }
 
     builder.Services.AddHealthChecks()
         .AddMySql(
-            connectionString!,
+            connectionString ?? "",
             name: "database",
             tags: new[] { "db", "sql", "mysql" })
         .AddCheck("api", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("API is running"));

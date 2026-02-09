@@ -15,11 +15,14 @@ namespace BackendAtlas.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Database Context
+            // 1. Intentar obtener de múltiples fuentes comunes
             var connectionString = configuration.GetConnectionString("DefaultConnection") 
-                                 ?? configuration["DefaultConnection"]
-                                 ?? configuration["DATABASE_URL"];
+                                 ?? configuration["DefaultConnection"] 
+                                 ?? configuration["DATABASE_URL"]
+                                 ?? configuration["MYSQL_URL"]
+                                 ?? configuration["MYSQLURL"];
 
-            // 1. Si la cadena empieza con mysql:// (formato Railway/Standard), la traducimos
+            // 2. Traductor de formato mysql:// a Server=...
             if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
             {
                 try
@@ -34,27 +37,30 @@ namespace BackendAtlas.Extensions
 
                     connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pass};SSL Mode=None;";
                 }
-                catch { /* Si falla la traducción, dejamos la original */ }
+                catch { Log.Warning("No se pudo traducir el formato mysql://, se usará la original."); }
             }
             
-            // 2. Fallback total para Railway (autodetección directa)
+            // 3. Fallback manual por piezas (Railway vinculación directa)
             if (string.IsNullOrEmpty(connectionString))
             {
-                var host = configuration["MYSQLHOST"];
-                var user = configuration["MYSQLUSER"];
+                var host = configuration["MYSQLHOST"] ?? configuration["MYSQL_HOST"];
+                var user = configuration["MYSQLUSER"] ?? configuration["MYSQL_USER"];
                 if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(user))
                 {
-                    var port = configuration["MYSQLPORT"] ?? "3306";
-                    var db = configuration["MYSQLDATABASE"] ?? "railway";
-                    var pwd = configuration["MYSQLPASSWORD"];
+                    var port = configuration["MYSQLPORT"] ?? configuration["MYSQL_PORT"] ?? "3306";
+                    var db = configuration["MYSQLDATABASE"] ?? configuration["MYSQL_DATABASE"] ?? "railway";
+                    var pwd = configuration["MYSQLPASSWORD"] ?? configuration["MYSQL_PASSWORD"];
                     connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pwd};";
                 }
             }
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("No se encontró conexión. Configura 'DATABASE_URL' o 'DefaultConnection' en Railway.");
+                Log.Fatal("!!! ERROR CRÍTICO: No se detectó ninguna variable de conexión (DATABASE_URL, DefaultConnection, etc.)");
+                throw new InvalidOperationException("Conexión no encontrada.");
             }
+
+            Log.Information("Conexión detectada exitosamente. Configurando base de datos...");
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
