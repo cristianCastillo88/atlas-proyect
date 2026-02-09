@@ -31,6 +31,12 @@ namespace BackendAtlas.Extensions
                 secretKey = "EstaEsUnaClaveDeEmergenciaMuyLargaParaQueElSistemaNoFalle123!";
             }
 
+            // ASEGURAR que AuthService (Generación de Token) use esta misma llave
+            services.PostConfigure<JwtSettings>(options =>
+            {
+                options.SecretKey = secretKey;
+            });
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
