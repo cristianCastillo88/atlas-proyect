@@ -28,7 +28,8 @@ try
         .AddJwtAuthentication(builder.Configuration);
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-                         ?? builder.Configuration["DefaultConnection"];
+                         ?? builder.Configuration["DefaultConnection"]
+                         ?? builder.Configuration["DATABASE_URL"];
 
     // Traductor universal de MySQL URL a formato EF Core
     if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))

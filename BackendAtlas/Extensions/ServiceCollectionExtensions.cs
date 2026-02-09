@@ -16,7 +16,8 @@ namespace BackendAtlas.Extensions
         {
             // Database Context
             var connectionString = configuration.GetConnectionString("DefaultConnection") 
-                                 ?? configuration["DefaultConnection"];
+                                 ?? configuration["DefaultConnection"]
+                                 ?? configuration["DATABASE_URL"];
 
             // 1. Si la cadena empieza con mysql:// (formato Railway/Standard), la traducimos
             if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
@@ -33,27 +34,26 @@ namespace BackendAtlas.Extensions
 
                     connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pass};SSL Mode=None;";
                 }
-                catch { /* Si falla la traducción, dejamos la original para que EF intente leerla */ }
+                catch { /* Si falla la traducción, dejamos la original */ }
             }
             
-            // 2. Fallback para Railway: Si sigue vacío, intentamos reconstruir desde variables individuales
+            // 2. Fallback total para Railway (autodetección directa)
             if (string.IsNullOrEmpty(connectionString))
             {
                 var host = configuration["MYSQLHOST"];
-                var port = configuration["MYSQLPORT"] ?? "3306";
-                var db = configuration["MYSQLDATABASE"] ?? "railway";
                 var user = configuration["MYSQLUSER"];
-                var pwd = configuration["MYSQLPASSWORD"];
-
                 if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(user))
                 {
+                    var port = configuration["MYSQLPORT"] ?? "3306";
+                    var db = configuration["MYSQLDATABASE"] ?? "railway";
+                    var pwd = configuration["MYSQLPASSWORD"];
                     connectionString = $"Server={host};Port={port};Database={db};Uid={user};Pwd={pwd};";
                 }
             }
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("No se encontró una cadena de conexión válida. Configura 'DefaultConnection' o vincula MySQL en Railway.");
+                throw new InvalidOperationException("No se encontró conexión. Configura 'DATABASE_URL' o 'DefaultConnection' en Railway.");
             }
 
             services.AddDbContext<AppDbContext>(options =>
