@@ -5,15 +5,21 @@ using BackendAtlas.Data;
 using Serilog;
 using Asp.Versioning;
 
+Console.WriteLine(">>> BackendAtlas: Iniciando proceso de arranque...");
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder()
         .AddJsonFile("appsettings.json")
         .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+        .AddEnvironmentVariables() // ¡CRUCIAL para Railway!
         .Build())
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "BackendAtlas")
     .Enrich.WithProperty("Environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production")
+    .WriteTo.Console() // Asegurar salida a consola
     .CreateLogger();
+
+Log.Information("Serilog configurado. Iniciando WebApplicationBuilder...");
 
 try
 {

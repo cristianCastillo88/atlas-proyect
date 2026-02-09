@@ -8,11 +8,13 @@ namespace BackendAtlas.Data
     {
         public static void Initialize(AppDbContext context, IConfiguration configuration)
         {
+            Console.WriteLine(">>> DbInitializer: Iniciando migración de base de datos...");
             Serilog.Log.Information("Iniciando proceso de migración y sembrado de base de datos...");
 
             // Ejecutar migraciones automáticamente al iniciar
             context.Database.Migrate();
 
+            Console.WriteLine(">>> DbInitializer: Migraciones completadas.");
             Serilog.Log.Information("Migraciones aplicadas con éxito.");
 
             // 1. Sembrar Estados de Pedido
