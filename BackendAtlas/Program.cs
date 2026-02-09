@@ -29,7 +29,7 @@ try
 
     builder.Services.AddHealthChecks()
         .AddMySql(
-            builder.Configuration.GetConnectionString("DefaultConnection")!,
+            builder.Configuration.GetConnectionString("DefaultConnection") ?? builder.Configuration["DefaultConnection"]!,
             name: "database",
             tags: new[] { "db", "sql", "mysql" })
         .AddCheck("api", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("API is running"));
