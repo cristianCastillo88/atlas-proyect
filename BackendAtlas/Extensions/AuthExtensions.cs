@@ -13,18 +13,22 @@ namespace BackendAtlas.Extensions
             services.Configure<JwtSettings>(jwtSettingsSection);
             var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 
-            // Obtener la clave secreta de varias fuentes posibles
-            var secretKey = configuration["JwtSettings:SecretKey"] 
-                          ?? configuration["JwtSettings__SecretKey"] 
-                          ?? configuration["JWT_SECRET"] 
-                          ?? configuration["JWT_KEY"];
+            // 1. Buscar en variables de entorno puras primero (Lo más seguro en Railway)
+            var secretKey = configuration["JWT_SECRET"] 
+                          ?? configuration["JWT_KEY"]
+                          ?? configuration["JwtSettings__SecretKey"];
 
-            if (string.IsNullOrEmpty(secretKey))
+            // 2. Si no está o es vacío, buscar en la sección de configuración
+            if (string.IsNullOrWhiteSpace(secretKey))
             {
-                // En producción esto es un error fatal, pero evitamos el crash inmediato
-                // para que el log pueda mostrar el error.
-                Serilog.Log.Error("!!! ERROR CRÍTICO: No se encontró la clave secreta JWT (JWT_SECRET). El login fallará.");
-                secretKey = "ClaveTemporalDeSeguridadParaEvitarCrashDeArranque123!"; 
+                secretKey = jwtSettings?.SecretKey;
+            }
+
+            // 3. Fallback final si todo lo anterior es vacío o nulo
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                Serilog.Log.Error("!!! ERROR CRÍTICO: No se encontró JWT_SECRET. Usando clave de emergencia para permitir el arranque.");
+                secretKey = "EstaEsUnaClaveDeEmergenciaMuyLargaParaQueElSistemaNoFalle123!";
             }
 
             services.AddAuthentication(options =>
