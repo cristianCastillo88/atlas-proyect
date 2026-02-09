@@ -11,6 +11,16 @@ namespace BackendAtlas.Data
             // Ejecutar migraciones automáticamente al iniciar
             context.Database.Migrate();
 
+            // --- RUTINA DE LIMPIEZA DE DATOS DE PRUEBA ---
+            // Borramos el negocio de ejemplo de la migración inicial si existe
+            var demoNegocio = context.Negocios.FirstOrDefault(n => n.Nombre == "Pizzeria Don Pepe" || n.Slug == "pizzeria-don-pepe");
+            if (demoNegocio != null)
+            {
+                context.Negocios.Remove(demoNegocio);
+                context.SaveChanges();
+            }
+            // ---------------------------------------------
+
             // 1. Sembrar Estados de Pedido
             if (!context.EstadosPedido.Any())
             {
