@@ -13,6 +13,20 @@ namespace BackendAtlas.Extensions
             services.Configure<JwtSettings>(jwtSettingsSection);
             var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 
+            // Obtener la clave secreta de varias fuentes posibles
+            var secretKey = configuration["JwtSettings:SecretKey"] 
+                          ?? configuration["JwtSettings__SecretKey"] 
+                          ?? configuration["JWT_SECRET"] 
+                          ?? configuration["JWT_KEY"];
+
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                // En producción esto es un error fatal, pero evitamos el crash inmediato
+                // para que el log pueda mostrar el error.
+                Serilog.Log.Error("!!! ERROR CRÍTICO: No se encontró la clave secreta JWT (JWT_SECRET). El login fallará.");
+                secretKey = "ClaveTemporalDeSeguridadParaEvitarCrashDeArranque123!"; 
+            }
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -28,7 +42,7 @@ namespace BackendAtlas.Extensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings?.Issuer,
                     ValidAudience = jwtSettings?.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings?.SecretKey ?? ""))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
 
                 // Configuración para SignalR: Leer token del QueryString
