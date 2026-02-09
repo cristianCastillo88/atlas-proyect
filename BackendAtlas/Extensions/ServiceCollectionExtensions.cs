@@ -1,4 +1,5 @@
-     using BackendAtlas.Data;
+using System;
+using BackendAtlas.Data;
 using BackendAtlas.Repositories.Implementations;
 using BackendAtlas.Repositories.Interfaces;
 using BackendAtlas.Services.Implementations;
@@ -7,6 +8,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using BackendAtlas.Mapping;
+using Serilog;
 
 namespace BackendAtlas.Extensions
 {
